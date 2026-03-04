@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ThinkingAnimation } from "./thinking-animation";
 
 interface ResponseDisplayProps {
   text: string;
@@ -64,23 +65,29 @@ export function ResponseDisplay({
           </motion.div>
         )}
 
-        {/* Loading Image State */}
+        {/* Loading Image State - Beautiful thinking animation */}
         {isLoadingImage && (
           <motion.div
-            key="loading"
+            key="loading-image"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-1 flex-col items-center justify-center"
+            className="flex flex-1"
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="mb-4 h-12 w-12 rounded-full border-4 border-[#2A2118] border-t-[#C4973B]"
-            />
-            <p className="text-lg text-[#A89885]">
-              Creating something special...
-            </p>
+            <ThinkingAnimation isThinking={true} type="image" />
+          </motion.div>
+        )}
+
+        {/* Loading Text State - When streaming starts but no text yet */}
+        {isStreaming && !text && !isLoadingImage && (
+          <motion.div
+            key="loading-text"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-1"
+          >
+            <ThinkingAnimation isThinking={true} type="text" />
           </motion.div>
         )}
 

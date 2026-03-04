@@ -421,18 +421,13 @@ export function PlaygroundClient({
           {/* Input Area - fixed at bottom */}
           <div className="flex-shrink-0 border-t border-[#2A2118] bg-[#0F0A07] px-6 py-4">
             {/* Subject Picker */}
-            <div className="mb-3 flex items-center gap-2">
+            <div className="mb-3">
               <SubjectPicker
                 treeNodes={treeNodes}
                 selectedSubjects={selectedSubjects}
                 onSelect={handleSelectSubject}
                 onRemove={handleRemoveSubject}
               />
-              {selectedSubjects.length === 0 && cache && (
-                <span className="text-xs text-[#A89885]">
-                  💡 Just type a name — AI detects it
-                </span>
-              )}
             </div>
 
             {/* Prompt Input */}

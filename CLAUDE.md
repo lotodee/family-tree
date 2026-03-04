@@ -1,5 +1,25 @@
 # CLAUDE.md — The Book of the Family
 
+## Skills (MUST CHECK FIRST)
+
+**Before implementing any task, check if a relevant skill applies.**
+
+Available skills are shown in system reminders. Key skills for this project:
+- `senior-frontend` — React/Next.js/TypeScript/Tailwind patterns
+- `next-best-practices` — Next.js file conventions, RSC, data patterns
+- `frontend-tailwind-best-practices` — Tailwind CSS patterns
+- `vercel-react-best-practices` — Performance optimization
+- `gemini-guide` — @google/genai SDK patterns
+- `supabase-postgres-best-practices` — Database optimization
+- `prompt-engineering` — LLM/image/video prompting techniques
+- `code-review` / `security-review` / `design-review` — PR reviews
+
+**How to use:** Invoke via `/skill-name` or the Skill tool.
+
+**Enforcement:** If a task matches a skill description, USE IT. Skills contain specialized knowledge that improves output quality.
+
+---
+
 ## Project
 
 A mobile-responsive web app for a family gathering. Two phases:
@@ -73,6 +93,13 @@ bunx vercel --prod       # deploy
 - Run `bun run typecheck` after any TypeScript changes
 - Run `bun run build` before committing to catch build errors
 - Test all pages on mobile viewport (375px width minimum)
+
+## Communication Rules
+
+**Questions vs Problems:**
+- When I ask a QUESTION (e.g., "is there a way to...?", "what options do I have for...?"), provide options/answers FIRST. Do not immediately start implementing.
+- When I describe a PROBLEM to solve (e.g., "fix this", "add this feature", "remove this"), then take action.
+- If unclear, ask for clarification before proceeding.
 
 ## Environment Variables
 
