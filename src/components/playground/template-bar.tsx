@@ -2,6 +2,28 @@
 
 import { motion } from "framer-motion";
 import type { PromptTemplate } from "@/lib/gemini/prompts";
+import {
+  LaughIcon,
+  QuestionIcon,
+  ScaleIcon,
+  TrophyIcon,
+  CrownIcon,
+  ToastIcon,
+  TagIcon,
+  SparkleIcon,
+} from "@/components/icons";
+
+// Map icon keys to components
+const iconMap: Record<string, React.ReactNode> = {
+  laugh: <LaughIcon size={18} />,
+  question: <QuestionIcon size={18} />,
+  scale: <ScaleIcon size={18} />,
+  trophy: <TrophyIcon size={18} />,
+  crown: <CrownIcon size={18} />,
+  toast: <ToastIcon size={18} />,
+  tag: <TagIcon size={18} />,
+  sparkle: <SparkleIcon size={18} />,
+};
 
 interface TemplateBarProps {
   templates: PromptTemplate[];
@@ -34,7 +56,7 @@ export function TemplateBar({
                   : "border border-[#2A2118] bg-[#1A1410] text-[#A89885] hover:border-[#C4973B] hover:text-[#FFF8F0]"
               }`}
             >
-              <span>{template.icon}</span>
+              <span>{iconMap[template.icon] || template.icon}</span>
               <span>{template.label}</span>
             </button>
           );

@@ -28,7 +28,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "funny_intro",
     label: "Funny Intro",
-    icon: "😂",
+    icon: "laugh",
     description: "Introduce someone in the most hilarious way",
     subjectCount: "one",
     buildPrompt: ([name]) =>
@@ -37,7 +37,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "what_if",
     label: "What If...",
-    icon: "🤔",
+    icon: "question",
     description: "Imagine a fun scenario about someone",
     subjectCount: "one",
     scenarioInput: true,
@@ -47,7 +47,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "compare",
     label: "Compare Two",
-    icon: "⚖️",
+    icon: "scale",
     description: "Compare two family members side by side",
     subjectCount: "two",
     buildPrompt: ([name1, name2]) =>
@@ -56,7 +56,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "superlatives",
     label: "Family Superlative",
-    icon: "🏆",
+    icon: "trophy",
     description: "Who's the most likely to... in the family",
     subjectCount: "none",
     scenarioInput: true,
@@ -66,7 +66,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "legacy",
     label: "Grandpa's Legacy",
-    icon: "👑",
+    icon: "crown",
     description: "How Grandpa shaped this family",
     subjectCount: "none",
     buildPrompt: () =>
@@ -75,7 +75,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "toast",
     label: "Write a Toast",
-    icon: "🥂",
+    icon: "toast",
     description: "Generate a personalized toast",
     subjectCount: "one",
     buildPrompt: ([name]) =>
@@ -84,7 +84,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "nickname",
     label: "Family Nickname",
-    icon: "🏷️",
+    icon: "tag",
     description: "Generate a funny family nickname",
     subjectCount: "one",
     buildPrompt: ([name]) =>
@@ -93,7 +93,7 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
     key: "free",
     label: "Ask Anything",
-    icon: "✨",
+    icon: "sparkle",
     description: "Type your own custom prompt",
     subjectCount: "any",
     buildPrompt: () => "", // Host writes their own prompt

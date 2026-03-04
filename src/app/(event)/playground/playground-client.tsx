@@ -7,6 +7,7 @@ import { SubjectPicker } from "@/components/playground/subject-picker";
 import { ResponseDisplay } from "@/components/playground/response-display";
 import { PromptInput } from "@/components/playground/prompt-input";
 import { HistorySidebar } from "@/components/playground/history-sidebar";
+import { StarIcon, RefreshIcon, PaletteIcon } from "@/components/icons";
 
 // Sprint 5: Smart Context imports
 import {
@@ -159,7 +160,7 @@ export function PlaygroundClient({
       } else if (mediaType === "video") {
         // Video: fall back to text with video-style prompt
         const videoPrompt = `The host wants a video about this. Since we can't generate video yet, describe in vivid detail what this video would look like — the scenes, the music, the energy. Make it so vivid the audience can picture it.\n\nOriginal request: ${promptText}`;
-        setCurrentResponse("🎬 Video generation is coming soon! Here's what it would look like:\n\n");
+        setCurrentResponse("Video generation is coming soon! Here's what it would look like:\n\n");
         await streamTextResponse(videoPrompt, finalSubjectIds, context);
       } else {
         // Default: text streaming
@@ -264,7 +265,7 @@ export function PlaygroundClient({
           setCurrentResponse(""); // Clear text response when showing image
         } else {
           setCurrentResponse(
-            `🎨 Here's how the AI imagines it:\n\n${data.imageDescription}\n\n${data.imageExplanation ? `💡 ${data.imageExplanation}\n\n` : ""}(Image generation wasn't available — but paint this picture in your minds!)`
+            `Here's how the AI imagines it:\n\n${data.imageDescription}\n\n${data.imageExplanation ? `${data.imageExplanation}\n\n` : ""}(Image generation wasn't available — but paint this picture in your minds!)`
           );
         }
 
@@ -352,8 +353,8 @@ export function PlaygroundClient({
       <header className="border-b border-[#2A2118] px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div>
-            <h1 className="font-serif text-2xl tracking-[0.25em] text-[#C4973B]">
-              ✦ MICHAEL ADEMILUYI&apos;S 100TH ✦
+            <h1 className="flex items-center gap-3 font-serif text-2xl tracking-[0.15em] text-[#C4973B]">
+              <StarIcon size={20} /> MICHAEL ADEMILUYI&apos;S 100TH <StarIcon size={20} />
             </h1>
             <p className="mt-1 text-sm text-[#A89885]">
               The Ademiluyi Family AI
@@ -373,10 +374,10 @@ export function PlaygroundClient({
               <button
                 onClick={refreshCache}
                 disabled={isLoadingCache}
-                className="rounded-lg bg-[#1A1410] px-3 py-2 text-xs text-[#A89885] transition hover:bg-[#2A2118] disabled:opacity-50"
+                className="rounded-lg bg-[#1A1410] p-2 text-[#A89885] transition hover:bg-[#2A2118] disabled:opacity-50"
                 title="Refresh family data"
               >
-                🔄
+                <RefreshIcon size={18} isSpinning={isLoadingCache} />
               </button>
             )}
             <button
