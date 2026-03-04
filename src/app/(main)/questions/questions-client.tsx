@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check, User, Users } from "lucide-react";
 import { QuestionCard } from "@/components/questions/question-card";
 import { SubjectPicker } from "@/components/questions/subject-picker";
 import { CompletionCard } from "@/components/questions/completion-card";
@@ -30,6 +30,8 @@ export function QuestionsPageClient({
     null
   );
   const [answers, setAnswers] = useState<Answer[]>(existingAnswers);
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
 
   // Split questions by type
   const selfQuestions = useMemo(
@@ -60,33 +62,61 @@ export function QuestionsPageClient({
     );
   }, [answers, currentQuestion, currentSubjectId]);
 
-  // Calculate progress
-  const selfAnsweredCount = useMemo(() => {
-    return answers.filter(
-      (a) =>
-        a.subject_id === profile.tree_node_id &&
-        selfQuestions.some((q) => q.id === a.question_id)
-    ).length;
+  // Get self answers with question text
+  const selfAnswersWithQuestions = useMemo(() => {
+    return answers
+      .filter(
+        (a) =>
+          a.subject_id === profile.tree_node_id &&
+          selfQuestions.some((q) => q.id === a.question_id)
+      )
+      .map((a) => ({
+        ...a,
+        question: selfQuestions.find((q) => q.id === a.question_id),
+      }))
+      .filter((a) => a.question);
   }, [answers, profile.tree_node_id, selfQuestions]);
 
-  const peopleAnsweredAbout = useMemo(() => {
-    const subjectIds = new Set(
-      answers
-        .filter(
-          (a) =>
-            a.subject_id !== profile.tree_node_id &&
-            aboutOtherQuestions.some((q) => q.id === a.question_id)
-        )
-        .map((a) => a.subject_id)
-    );
-    return subjectIds.size;
-  }, [answers, profile.tree_node_id, aboutOtherQuestions]);
+  // Get about_other answers grouped by subject
+  const otherAnswersBySubject = useMemo(() => {
+    const grouped: Record<
+      string,
+      { subjectName: string; answers: (Answer & { question?: Question })[] }
+    > = {};
+
+    answers
+      .filter(
+        (a) =>
+          a.subject_id !== profile.tree_node_id &&
+          aboutOtherQuestions.some((q) => q.id === a.question_id)
+      )
+      .forEach((a) => {
+        if (!grouped[a.subject_id]) {
+          const node = treeNodes.find((n) => n.id === a.subject_id);
+          grouped[a.subject_id] = {
+            subjectName: node?.display_name || "Unknown",
+            answers: [],
+          };
+        }
+        grouped[a.subject_id].answers.push({
+          ...a,
+          question: aboutOtherQuestions.find((q) => q.id === a.question_id),
+        });
+      });
+
+    return grouped;
+  }, [answers, profile.tree_node_id, aboutOtherQuestions, treeNodes]);
+
+  // Calculate progress
+  const selfAnsweredCount = selfAnswersWithQuestions.length;
+
+  const peopleAnsweredAbout = Object.keys(otherAnswersBySubject).length;
 
   // Check if all self questions are answered
   const allSelfAnswered = selfAnsweredCount >= selfQuestions.length;
 
   // Handlers
-  const handleAnswerSaved = (answer: Answer) => {
+  const handleAnswerSaved = (answer: Answer, isNewAnswer: boolean) => {
     setAnswers((prev) => {
       const existing = prev.findIndex(
         (a) =>
@@ -100,6 +130,13 @@ export function QuestionsPageClient({
       }
       return [...prev, answer];
     });
+
+    // Auto-skip to next question on new answer
+    if (isNewAnswer && currentQuestionIndex < currentQuestions.length - 1) {
+      setTimeout(() => {
+        setCurrentQuestionIndex((i) => i + 1);
+      }, 500);
+    }
   };
 
   const handleAnswerDeleted = (questionId: string, subjectId: string) => {
@@ -149,144 +186,396 @@ export function QuestionsPageClient({
     return node?.display_name || "this person";
   }, [selectedSubjectId, treeNodes]);
 
-  return (
-    <div className="mx-auto max-w-lg px-4 py-6">
-      {/* Tab Bar */}
-      <div className="sticky top-0 z-10 mb-6 flex rounded-xl bg-white/80 p-1 shadow-sm backdrop-blur">
-        <button
-          onClick={() => {
-            setPhase("self");
-            setCurrentQuestionIndex(0);
-          }}
-          className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-            phase === "self"
-              ? "bg-[var(--color-gold)] text-white"
-              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-          }`}
-        >
-          About You
-          <span className="ml-1 text-xs opacity-80">
-            ({selfAnsweredCount}/{selfQuestions.length})
+  // Side Panel Component
+  const AnswerPanel = ({
+    title,
+    icon: Icon,
+    isOpen,
+    onToggle,
+    children,
+    count,
+  }: {
+    title: string;
+    icon: typeof User;
+    isOpen: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+    count: number;
+  }) => (
+    <div className="rounded-xl border border-[var(--color-gold-light)] bg-white overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-4 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Icon className="h-5 w-5 text-[var(--color-burgundy)]" />
+          <span className="font-medium text-[var(--color-text-primary)]">
+            {title}
           </span>
-        </button>
-        <button
-          onClick={() => {
-            setPhase("about_other");
-            setCurrentQuestionIndex(0);
-          }}
-          className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-            phase === "about_other"
-              ? "bg-[var(--color-gold)] text-white"
-              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          <span className="rounded-full bg-[var(--color-gold-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-burgundy)]">
+            {count}
+          </span>
+        </div>
+        <ChevronDown
+          className={`h-5 w-5 text-[var(--color-text-secondary)] transition-transform ${
+            isOpen ? "rotate-180" : ""
           }`}
-        >
-          About Others
-          {peopleAnsweredAbout > 0 && (
-            <span className="ml-1 text-xs opacity-80">
-              ({peopleAnsweredAbout} {peopleAnsweredAbout === 1 ? "person" : "people"})
-            </span>
-          )}
-        </button>
-      </div>
+        />
+      </button>
+      {isOpen && <div className="border-t border-[var(--color-gold-light)] p-4">{children}</div>}
+    </div>
+  );
 
-      {/* Content */}
-      {phase === "self" && allSelfAnswered ? (
-        <CompletionCard
-          onTalkAboutOthers={handleTalkAboutOthers}
-          onReviewAnswers={handleReviewAnswers}
-        />
-      ) : phase === "about_other" && !selectedSubjectId ? (
-        <SubjectPicker
-          treeNodes={treeNodes}
-          userTreeNodeId={profile.tree_node_id!}
-          existingAnswers={answers}
-          onSelectSubject={handleSelectSubject}
-        />
-      ) : currentQuestion && currentSubjectId ? (
-        <>
-          {/* Change person button for "about others" */}
-          {phase === "about_other" && selectedSubjectId && (
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-[var(--color-text-secondary)]">
-                Talking about{" "}
-                <span className="font-medium text-[var(--color-burgundy)]">
-                  {selectedSubjectName}
-                </span>
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      {/* Desktop Layout with Side Panels */}
+      <div className="flex gap-6">
+        {/* Left Panel - Your Answers (Desktop only) */}
+        <div className="hidden w-72 shrink-0 lg:block">
+          <div className="sticky top-20 space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <User className="h-5 w-5 text-[var(--color-burgundy)]" />
+              <h3 className="font-medium text-[var(--color-text-primary)]">
+                Your Answers
+              </h3>
+              <span className="rounded-full bg-[var(--color-gold-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-burgundy)]">
+                {selfAnsweredCount}/{selfQuestions.length}
               </span>
-              <button
-                onClick={handleChangePerson}
-                className="text-sm text-[var(--color-gold)] hover:underline"
-              >
-                Change person
-              </button>
             </div>
-          )}
-
-          {/* Question Card */}
-          <QuestionCard
-            question={currentQuestion}
-            subjectId={currentSubjectId}
-            subjectName={
-              phase === "self" ? profile.full_name : selectedSubjectName
-            }
-            userId={userId}
-            existingAnswer={existingAnswer || null}
-            questionNumber={currentQuestionIndex + 1}
-            totalQuestions={currentQuestions.length}
-            onAnswerSaved={handleAnswerSaved}
-            onAnswerDeleted={handleAnswerDeleted}
-          />
-
-          {/* Navigation */}
-          <div className="mt-6 flex items-center justify-between">
-            <button
-              onClick={goToPrevious}
-              disabled={currentQuestionIndex === 0}
-              className="flex items-center gap-1 rounded-lg px-4 py-2 text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30"
-            >
-              <ChevronLeft className="h-5 w-5" />
-              Previous
-            </button>
-
-            {/* Progress Dots */}
-            <div className="flex gap-1.5">
-              {currentQuestions.map((_, index) => {
-                const questionId = currentQuestions[index].id;
-                const isAnswered = answers.some(
-                  (a) =>
-                    a.question_id === questionId &&
-                    a.subject_id === currentSubjectId
-                );
-                const isCurrent = index === currentQuestionIndex;
-
-                return (
+            <div className="max-h-[calc(100vh-200px)] space-y-2 overflow-y-auto rounded-xl border border-[var(--color-gold-light)] bg-white p-3">
+              {selfAnswersWithQuestions.length === 0 ? (
+                <p className="py-4 text-center text-sm text-[var(--color-text-secondary)]">
+                  No answers yet
+                </p>
+              ) : (
+                selfAnswersWithQuestions.map((a) => (
                   <button
-                    key={index}
-                    onClick={() => setCurrentQuestionIndex(index)}
-                    className={`rounded-full transition-all ${
-                      isCurrent
-                        ? "h-3 w-3 bg-[var(--color-burgundy)]"
-                        : isAnswered
-                          ? "h-2 w-2 bg-[var(--color-gold)]"
-                          : "h-2 w-2 bg-[var(--color-gold-light)]"
-                    }`}
-                    aria-label={`Go to question ${index + 1}`}
-                  />
-                );
-              })}
+                    key={a.id}
+                    onClick={() => {
+                      setPhase("self");
+                      const idx = selfQuestions.findIndex(
+                        (q) => q.id === a.question_id
+                      );
+                      if (idx >= 0) setCurrentQuestionIndex(idx);
+                    }}
+                    className="w-full rounded-lg bg-[var(--color-cream)] p-3 text-left transition-all hover:bg-[var(--color-gold-light)]/50"
+                  >
+                    <p className="mb-1 text-xs font-medium text-[var(--color-burgundy)]">
+                      {a.question?.text}
+                    </p>
+                    <p className="line-clamp-2 text-sm text-[var(--color-text-secondary)]">
+                      {a.answer_text}
+                    </p>
+                  </button>
+                ))
+              )}
             </div>
+          </div>
+        </div>
 
+        {/* Main Content */}
+        <div className="min-w-0 flex-1">
+          {/* Tab Bar */}
+          <div className="sticky top-0 z-10 mb-6 flex rounded-xl bg-white/80 p-1 shadow-sm backdrop-blur">
             <button
-              onClick={goToNext}
-              disabled={currentQuestionIndex === currentQuestions.length - 1}
-              className="flex items-center gap-1 rounded-lg px-4 py-2 text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30"
+              onClick={() => {
+                setPhase("self");
+                setCurrentQuestionIndex(0);
+              }}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
+                phase === "self"
+                  ? "bg-[var(--color-gold)] text-white"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              }`}
             >
-              Next
-              <ChevronRight className="h-5 w-5" />
+              About You
+              <span className="ml-1 text-xs opacity-80">
+                ({selfAnsweredCount}/{selfQuestions.length})
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setPhase("about_other");
+                setCurrentQuestionIndex(0);
+              }}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
+                phase === "about_other"
+                  ? "bg-[var(--color-gold)] text-white"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              }`}
+            >
+              About Others
+              {peopleAnsweredAbout > 0 && (
+                <span className="ml-1 text-xs opacity-80">
+                  ({peopleAnsweredAbout}{" "}
+                  {peopleAnsweredAbout === 1 ? "person" : "people"})
+                </span>
+              )}
             </button>
           </div>
-        </>
-      ) : null}
+
+          {/* Content */}
+          <div className="mx-auto max-w-lg">
+            {phase === "self" && allSelfAnswered ? (
+              <CompletionCard
+                onTalkAboutOthers={handleTalkAboutOthers}
+                onReviewAnswers={handleReviewAnswers}
+              />
+            ) : phase === "about_other" && !selectedSubjectId ? (
+              <SubjectPicker
+                treeNodes={treeNodes}
+                userTreeNodeId={profile.tree_node_id!}
+                existingAnswers={answers}
+                onSelectSubject={handleSelectSubject}
+              />
+            ) : currentQuestion && currentSubjectId ? (
+              <>
+                {/* Change person button for "about others" */}
+                {phase === "about_other" && selectedSubjectId && (
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                      Talking about{" "}
+                      <span className="font-medium text-[var(--color-burgundy)]">
+                        {selectedSubjectName}
+                      </span>
+                    </span>
+                    <button
+                      onClick={handleChangePerson}
+                      className="text-sm text-[var(--color-gold)] hover:underline"
+                    >
+                      Change person
+                    </button>
+                  </div>
+                )}
+
+                {/* Question Card */}
+                <QuestionCard
+                  question={currentQuestion}
+                  subjectId={currentSubjectId}
+                  subjectName={
+                    phase === "self" ? profile.full_name : selectedSubjectName
+                  }
+                  userId={userId}
+                  existingAnswer={existingAnswer || null}
+                  questionNumber={currentQuestionIndex + 1}
+                  totalQuestions={currentQuestions.length}
+                  onAnswerSaved={handleAnswerSaved}
+                  onAnswerDeleted={handleAnswerDeleted}
+                />
+
+                {/* Navigation */}
+                <div className="mt-6 flex items-center justify-between">
+                  <button
+                    onClick={goToPrevious}
+                    disabled={currentQuestionIndex === 0}
+                    className="flex items-center gap-1 rounded-lg px-4 py-2 text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                    Previous
+                  </button>
+
+                  {/* Progress Dots */}
+                  <div className="flex gap-1.5">
+                    {currentQuestions.map((_, index) => {
+                      const questionId = currentQuestions[index].id;
+                      const isAnswered = answers.some(
+                        (a) =>
+                          a.question_id === questionId &&
+                          a.subject_id === currentSubjectId
+                      );
+                      const isCurrent = index === currentQuestionIndex;
+
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentQuestionIndex(index)}
+                          className={`rounded-full transition-all ${
+                            isCurrent
+                              ? "h-3 w-3 bg-[var(--color-burgundy)]"
+                              : isAnswered
+                                ? "h-2 w-2 bg-[var(--color-gold)]"
+                                : "h-2 w-2 bg-[var(--color-gold-light)]"
+                          }`}
+                          aria-label={`Go to question ${index + 1}`}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={goToNext}
+                    disabled={currentQuestionIndex === currentQuestions.length - 1}
+                    className="flex items-center gap-1 rounded-lg px-4 py-2 text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30"
+                  >
+                    Next
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          {/* Mobile Panels - Below Main Content */}
+          <div className="mt-8 space-y-4 lg:hidden">
+            <AnswerPanel
+              title="Your Answers"
+              icon={User}
+              isOpen={showLeftPanel}
+              onToggle={() => setShowLeftPanel(!showLeftPanel)}
+              count={selfAnsweredCount}
+            >
+              {selfAnswersWithQuestions.length === 0 ? (
+                <p className="py-2 text-center text-sm text-[var(--color-text-secondary)]">
+                  No answers yet
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {selfAnswersWithQuestions.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => {
+                        setPhase("self");
+                        const idx = selfQuestions.findIndex(
+                          (q) => q.id === a.question_id
+                        );
+                        if (idx >= 0) setCurrentQuestionIndex(idx);
+                        setShowLeftPanel(false);
+                      }}
+                      className="w-full rounded-lg bg-[var(--color-cream)] p-3 text-left"
+                    >
+                      <p className="mb-1 flex items-center gap-1 text-xs font-medium text-[var(--color-burgundy)]">
+                        <Check className="h-3 w-3" />
+                        {a.question?.text}
+                      </p>
+                      <p className="line-clamp-2 text-sm text-[var(--color-text-secondary)]">
+                        {a.answer_text}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </AnswerPanel>
+
+            <AnswerPanel
+              title="About Others"
+              icon={Users}
+              isOpen={showRightPanel}
+              onToggle={() => setShowRightPanel(!showRightPanel)}
+              count={Object.values(otherAnswersBySubject).reduce(
+                (sum, g) => sum + g.answers.length,
+                0
+              )}
+            >
+              {Object.keys(otherAnswersBySubject).length === 0 ? (
+                <p className="py-2 text-center text-sm text-[var(--color-text-secondary)]">
+                  No answers yet
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(otherAnswersBySubject).map(
+                    ([subjectId, { subjectName, answers: subjectAnswers }]) => (
+                      <div key={subjectId}>
+                        <p className="mb-2 text-sm font-medium text-[var(--color-burgundy)]">
+                          About {subjectName}
+                        </p>
+                        <div className="space-y-2">
+                          {subjectAnswers.map((a) => (
+                            <button
+                              key={a.id}
+                              onClick={() => {
+                                setPhase("about_other");
+                                setSelectedSubjectId(subjectId);
+                                const idx = aboutOtherQuestions.findIndex(
+                                  (q) => q.id === a.question_id
+                                );
+                                if (idx >= 0) setCurrentQuestionIndex(idx);
+                                setShowRightPanel(false);
+                              }}
+                              className="w-full rounded-lg bg-[var(--color-cream)] p-3 text-left"
+                            >
+                              <p className="mb-1 flex items-center gap-1 text-xs font-medium text-[var(--color-gold)]">
+                                <Check className="h-3 w-3" />
+                                {a.question?.text?.replace(
+                                  "this person",
+                                  subjectName
+                                )}
+                              </p>
+                              <p className="line-clamp-2 text-sm text-[var(--color-text-secondary)]">
+                                {a.answer_text}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </AnswerPanel>
+          </div>
+        </div>
+
+        {/* Right Panel - About Others (Desktop only) */}
+        <div className="hidden w-72 shrink-0 lg:block">
+          <div className="sticky top-20 space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <Users className="h-5 w-5 text-[var(--color-burgundy)]" />
+              <h3 className="font-medium text-[var(--color-text-primary)]">
+                About Others
+              </h3>
+              <span className="rounded-full bg-[var(--color-gold-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-burgundy)]">
+                {Object.values(otherAnswersBySubject).reduce(
+                  (sum, g) => sum + g.answers.length,
+                  0
+                )}
+              </span>
+            </div>
+            <div className="max-h-[calc(100vh-200px)] space-y-4 overflow-y-auto rounded-xl border border-[var(--color-gold-light)] bg-white p-3">
+              {Object.keys(otherAnswersBySubject).length === 0 ? (
+                <p className="py-4 text-center text-sm text-[var(--color-text-secondary)]">
+                  No answers yet
+                </p>
+              ) : (
+                Object.entries(otherAnswersBySubject).map(
+                  ([subjectId, { subjectName, answers: subjectAnswers }]) => (
+                    <div key={subjectId}>
+                      <p className="mb-2 text-sm font-medium text-[var(--color-burgundy)]">
+                        About {subjectName}
+                      </p>
+                      <div className="space-y-2">
+                        {subjectAnswers.map((a) => (
+                          <button
+                            key={a.id}
+                            onClick={() => {
+                              setPhase("about_other");
+                              setSelectedSubjectId(subjectId);
+                              const idx = aboutOtherQuestions.findIndex(
+                                (q) => q.id === a.question_id
+                              );
+                              if (idx >= 0) setCurrentQuestionIndex(idx);
+                            }}
+                            className="w-full rounded-lg bg-[var(--color-cream)] p-3 text-left transition-all hover:bg-[var(--color-gold-light)]/50"
+                          >
+                            <p className="mb-1 text-xs font-medium text-[var(--color-gold)]">
+                              {a.question?.text?.replace(
+                                "this person",
+                                subjectName
+                              )}
+                            </p>
+                            <p className="line-clamp-2 text-sm text-[var(--color-text-secondary)]">
+                              {a.answer_text}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

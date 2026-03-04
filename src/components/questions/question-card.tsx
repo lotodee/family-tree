@@ -18,7 +18,7 @@ interface QuestionCardProps {
   existingAnswer: Answer | null;
   questionNumber: number;
   totalQuestions: number;
-  onAnswerSaved: (answer: Answer) => void;
+  onAnswerSaved: (answer: Answer, isNewAnswer: boolean) => void;
   onAnswerDeleted: (questionId: string, subjectId: string) => void;
 }
 
@@ -69,7 +69,8 @@ export function QuestionCard({
     text: string,
     inputMethod: "text" | "voice",
     voiceUrlParam?: string,
-    rawTranscriptionParam?: string
+    rawTranscriptionParam?: string,
+    isUpdate: boolean = false
   ) => {
     setIsSaving(true);
     try {
@@ -93,8 +94,8 @@ export function QuestionCard({
         return;
       }
 
-      toast.success("Answer saved!");
-      onAnswerSaved(data.answer);
+      toast.success(isUpdate ? "Answer updated!" : "Answer saved!");
+      onAnswerSaved(data.answer, !isUpdate);
       setCardState("hasAnswer");
       setVoiceUrl(null);
       setRawTranscription(null);
@@ -222,7 +223,8 @@ export function QuestionCard({
                 text,
                 existingAnswer.input_method as "text" | "voice",
                 existingAnswer.voice_url || undefined,
-                existingAnswer.raw_transcription || undefined
+                existingAnswer.raw_transcription || undefined,
+                true // isUpdate
               )
             }
             isEditing={true}
