@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateContent } from "@/lib/gemini/client";
+import { generateContent, generateImages } from "@/lib/gemini/client";
 import {
   buildContextForSubject,
   buildContextForMultipleSubjects,
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       context = "";
     }
 
-    // Use Gemini to create a detailed image description from the family data
+    // Use Gemini to create a detailed image prompt from the family data
     const imagePromptResult = await generateContent(
       `Based on the following family data, create a detailed image generation prompt that visually captures the essence of this request: "${prompt}".
 
@@ -35,12 +35,37 @@ export async function POST(request: NextRequest) {
        Family data:\n${context}`
     );
 
-    const imageDescription = imagePromptResult.text || prompt;
-
-    // For now, we use Tier 2 (text description) since Vertex AI image generation
-    // requires Imagen API which has different setup requirements.
-    // The image description can be used with external image generators if needed.
+    const imagePrompt = imagePromptResult.text || prompt;
     let imageUrl: string | null = null;
+    let imageDescription = imagePrompt;
+
+    // Generate image using Nano Banana
+    try {
+      const imageResult = await generateImages(imagePrompt);
+      const generatedImage = imageResult.generatedImages?.[0];
+
+      if (generatedImage?.image?.imageBytes) {
+        // Upload to Supabase storage
+        const imageBuffer = Buffer.from(generatedImage.image.imageBytes, "base64");
+        const fileName = `generated-${Date.now()}.png`;
+
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+          .from("generated-images")
+          .upload(fileName, imageBuffer, {
+            contentType: "image/png",
+            upsert: false,
+          });
+
+        if (!uploadError && uploadData) {
+          const { data: urlData } = supabaseAdmin.storage
+            .from("generated-images")
+            .getPublicUrl(fileName);
+          imageUrl = urlData.publicUrl;
+        }
+      }
+    } catch (imageError) {
+      console.error("Image generation failed, falling back to description:", imageError);
+    }
 
     // Save session
     await supabaseAdmin.from("llm_sessions").insert({

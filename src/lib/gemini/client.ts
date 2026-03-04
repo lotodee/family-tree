@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 let _client: GoogleGenAI | null = null;
+let _imagenClient: GoogleGenAI | null = null;
 
 /**
  * Lazily initialize Google GenAI client with Vertex AI.
@@ -94,5 +95,77 @@ export async function generateContent(
     model,
     contents: prompt,
     config,
+  });
+}
+
+/**
+ * Generate images using Nano Banana model.
+ */
+/**
+ * Get Imagen client (requires us-central1 region).
+ */
+function getImagenClient(): GoogleGenAI {
+  if (!_imagenClient) {
+    if (!process.env.VERTEX_CREDENTIALS_BASE64) {
+      throw new Error("VERTEX_CREDENTIALS_BASE64 is not configured");
+    }
+    if (!process.env.VERTEX_PROJECT_ID) {
+      throw new Error("VERTEX_PROJECT_ID is not configured");
+    }
+
+    const credentialsJson = Buffer.from(
+      process.env.VERTEX_CREDENTIALS_BASE64,
+      "base64"
+    ).toString("utf-8");
+    const credentials = JSON.parse(credentialsJson);
+
+    const project = process.env.VERTEX_PROJECT_ID;
+    // Imagen requires us-central1
+    const location = "us-central1";
+
+    console.log("[GenAI] Initializing Imagen client with:", {
+      project,
+      location,
+    });
+
+    _imagenClient = new GoogleGenAI({
+      vertexai: true,
+      project,
+      location,
+      googleAuthOptions: { credentials },
+    });
+  }
+  return _imagenClient;
+}
+
+export async function generateImages(prompt: string) {
+  const client = getImagenClient();
+  const model = "imagen-4.0-fast-generate-001";
+
+  console.log("[GenAI] Generating image with model:", model);
+
+  return client.models.generateImages({
+    model,
+    prompt,
+    config: {
+      numberOfImages: 1,
+      aspectRatio: "16:9",
+    },
+  });
+}
+
+/**
+ * Generate video using Veo 3 model.
+ */
+export async function generateVideo(prompt: string) {
+  const client = getClient();
+  const model = "veo-3-fast";
+
+  console.log("[GenAI] Generating video with model:", model);
+
+  // Note: Video generation API may differ - adjust as needed
+  return client.models.generateContent({
+    model,
+    contents: prompt,
   });
 }
