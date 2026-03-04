@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, KeyboardEvent } from "react";
-import { Play, Image } from "lucide-react";
+import { Send, Image } from "lucide-react";
 
 interface PromptInputProps {
   value: string;
@@ -61,20 +61,20 @@ export function PromptInput({
         <button
           onClick={onGenerateImage}
           disabled={isDisabled}
-          className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#2A2118] bg-[#1A1410] text-[#A89885] transition hover:border-[#C4973B] hover:text-[#C4973B] disabled:opacity-50"
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#2A2118] bg-[#1A1410] text-[#A89885] transition hover:border-[#C4973B] hover:text-[#C4973B] disabled:opacity-50"
           title="Generate Image"
         >
-          <Image size={24} />
+          <Image size={18} />
         </button>
 
         {/* Send Button */}
         <button
           onClick={onSend}
           disabled={isDisabled || !value.trim()}
-          className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#C4973B] text-[#0F0A07] transition hover:bg-[#D4A74B] disabled:opacity-50"
-          title="Send Prompt"
+          className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C4973B] text-[#0F0A07] transition hover:bg-[#D4A74B] disabled:opacity-50"
+          title="Send"
         >
-          <Play size={24} fill="currentColor" />
+          <Send size={18} />
         </button>
       </div>
     </div>
