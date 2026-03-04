@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FamilyLogo } from "@/components/ui/family-logo";
 
 interface TopNavProps {
   displayName: string;
@@ -20,11 +21,8 @@ export function TopNav({ displayName, treeNodeId }: TopNavProps) {
     <nav className="sticky top-0 z-50 border-b border-[var(--color-gold-light)] bg-[var(--color-cream)]">
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo / App Name */}
-        <Link
-          href="/dashboard"
-          className="font-[family-name:var(--font-playfair)] text-lg font-semibold text-[var(--color-gold)]"
-        >
-          Ademiluyi 100
+        <Link href="/dashboard">
+          <FamilyLogo showTagline={false} />
         </Link>
 
         {/* User Avatar */}
