@@ -1,27 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  BookOpenIcon,
+  LinkChainIcon,
+  SparkleIcon,
+  SmileIcon,
+  MasksIcon,
+  PaletteIcon,
+  ThoughtBubbleIcon,
+  RainbowIcon,
+  NigeriaFlagIcon,
+  FrameIcon,
+} from "@/components/icons";
 
 interface ThinkingAnimationProps {
   isThinking: boolean;
   type?: "text" | "image";
 }
 
-const TEXT_PHASES = [
-  { text: "Reading family stories", icon: "📖" },
-  { text: "Connecting the memories", icon: "🔗" },
-  { text: "Finding the perfect words", icon: "✨" },
-  { text: "Adding a touch of humor", icon: "😄" },
-  { text: "Crafting your response", icon: "🎭" },
+interface Phase {
+  text: string;
+  icon: ReactNode;
+}
+
+const TEXT_PHASES: Phase[] = [
+  { text: "Reading family stories", icon: <BookOpenIcon size={36} /> },
+  { text: "Connecting the memories", icon: <LinkChainIcon size={36} /> },
+  { text: "Finding the perfect words", icon: <SparkleIcon size={36} /> },
+  { text: "Adding a touch of humor", icon: <SmileIcon size={36} /> },
+  { text: "Crafting your response", icon: <MasksIcon size={36} /> },
 ];
 
-const IMAGE_PHASES = [
-  { text: "Studying their personality", icon: "🎨" },
-  { text: "Imagining the perfect scene", icon: "💭" },
-  { text: "Mixing colors and vibes", icon: "🌈" },
-  { text: "Adding Nigerian flavor", icon: "🇳🇬" },
-  { text: "Painting your masterpiece", icon: "🖼️" },
+const IMAGE_PHASES: Phase[] = [
+  { text: "Studying their personality", icon: <PaletteIcon size={36} /> },
+  { text: "Imagining the perfect scene", icon: <ThoughtBubbleIcon size={36} /> },
+  { text: "Mixing colors and vibes", icon: <RainbowIcon size={36} /> },
+  { text: "Adding Nigerian flavor", icon: <NigeriaFlagIcon size={36} /> },
+  { text: "Painting your masterpiece", icon: <FrameIcon size={36} /> },
 ];
 
 export function ThinkingAnimation({ isThinking, type = "text" }: ThinkingAnimationProps) {
@@ -121,16 +138,16 @@ export function ThinkingAnimation({ isThinking, type = "text" }: ThinkingAnimati
           }}
         >
           <AnimatePresence mode="wait">
-            <motion.span
+            <motion.div
               key={currentPhase}
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 180 }}
               transition={{ duration: 0.4 }}
-              className="text-3xl"
+              className="flex items-center justify-center"
             >
               {phases[currentPhase].icon}
-            </motion.span>
+            </motion.div>
           </AnimatePresence>
         </motion.div>
       </div>

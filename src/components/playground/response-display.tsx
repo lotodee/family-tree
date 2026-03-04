@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThinkingAnimation } from "./thinking-animation";
+import { StarIcon } from "@/components/icons";
 
 interface ResponseDisplayProps {
   text: string;
@@ -157,7 +158,7 @@ export function ResponseDisplay({
           className="mt-8 flex items-center justify-center gap-2 text-sm text-[#A89885]"
         >
           <span className="h-px flex-1 bg-[#C4973B]/30" />
-          <span>✦</span>
+          <StarIcon size={16} />
           <span className="h-px flex-1 bg-[#C4973B]/30" />
         </motion.div>
       )}
