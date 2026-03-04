@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getUser, getUserProfile, getTreeNode } from "@/lib/supabase/cached";
 import { ProfileClient } from "./profile-client";
 
 export default async function ProfilePage({
@@ -9,33 +10,18 @@ export default async function ProfilePage({
 }) {
   const { id: viewedNodeId } = await params;
 
-  const supabase = await createClient();
-
-  // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get current user (cached - deduped with middleware)
+  const { user } = await getUser();
   if (!user) redirect("/login");
 
-  // Get current user's profile
-  const { data: currentProfile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // Fetch profile and viewed node in parallel
+  const [{ profile: currentProfile }, { node: viewedNode }] = await Promise.all([
+    getUserProfile(user.id),
+    getTreeNode(viewedNodeId),
+  ]);
 
   if (!currentProfile) redirect("/register");
-
-  // Get the viewed profile's tree node
-  const { data: viewedNode } = await supabase
-    .from("family_tree_nodes")
-    .select("*")
-    .eq("id", viewedNodeId)
-    .single();
-
-  if (!viewedNode) {
-    redirect("/tree");
-  }
+  if (!viewedNode) redirect("/tree");
 
   // Check if viewing own profile
   const isOwnProfile = currentProfile.tree_node_id === viewedNodeId;
@@ -59,8 +45,14 @@ export default async function ProfilePage({
     subject?: { display_name: string };
   }> = [];
 
+  // Get current user's tree node for the name
+  const { node: currentNode } = currentProfile.tree_node_id
+    ? await getTreeNode(currentProfile.tree_node_id)
+    : { node: null };
+
   if (isOwnProfile) {
     // Fetch answers where this user is the respondent (what they said)
+    const supabase = await createClient();
     const { data: userAnswers } = await supabase
       .from("answers")
       .select(`
@@ -108,13 +100,6 @@ export default async function ProfilePage({
       });
     }
   }
-
-  // Get current user's name for the trick message
-  const { data: currentNode } = await supabase
-    .from("family_tree_nodes")
-    .select("display_name")
-    .eq("id", currentProfile.tree_node_id)
-    .single();
 
   const currentUserName = currentNode?.display_name || currentProfile.full_name;
 

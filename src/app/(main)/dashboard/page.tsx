@@ -1,52 +1,37 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { MessageSquare, GitBranch, User } from "lucide-react";
 import { LogoutButton } from "@/components/ui/logout-button";
+import {
+  getUser,
+  getUserProfile,
+  getTreeNode,
+  getUserAnswerCount,
+  getActiveQuestionsCount,
+  getClaimedNodesCount,
+} from "@/lib/supabase/cached";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get user (cached - deduped with middleware)
+  const { user } = await getUser();
   if (!user) redirect("/login");
 
-  // Fetch profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
+  // Fetch profile (cached)
+  const { profile } = await getUserProfile(user.id);
   if (!profile) redirect("/register");
 
-  // Fetch tree node
-  const { data: treeNode } = await supabase
-    .from("family_tree_nodes")
-    .select("*")
-    .eq("id", profile.tree_node_id)
-    .single();
-
-  // Count answered questions (confirmed answers where respondent is this user)
-  const { count: answeredCount } = await supabase
-    .from("answers")
-    .select("*", { count: "exact", head: true })
-    .eq("respondent_id", user.id)
-    .eq("is_confirmed", true);
-
-  // Total self-questions available
-  const { count: totalSelfQuestions } = await supabase
-    .from("questions")
-    .select("*", { count: "exact", head: true })
-    .eq("type", "self")
-    .eq("is_active", true);
-
-  // Count of claimed nodes (family members who have joined)
-  const { count: claimedCount } = await supabase
-    .from("family_tree_nodes")
-    .select("*", { count: "exact", head: true })
-    .eq("is_claimed", true);
+  // Run all independent queries in parallel for speed
+  const [
+    { node: treeNode },
+    { count: answeredCount },
+    { count: totalSelfQuestions },
+    { count: claimedCount },
+  ] = await Promise.all([
+    getTreeNode(profile.tree_node_id!),
+    getUserAnswerCount(user.id),
+    getActiveQuestionsCount("self"),
+    getClaimedNodesCount(),
+  ]);
 
   // Format relationship subtitle
   const getRelationshipSubtitle = () => {
