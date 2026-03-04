@@ -10,7 +10,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, subjectIds } = await request.json();
+    const { prompt, subjectIds, context: preBuiltContext } = await request.json();
 
     if (!prompt) {
       return new Response(
@@ -19,10 +19,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Build context
+    // 1. Build context (use pre-built if provided, otherwise build server-side)
     let context: string;
 
-    if (subjectIds && subjectIds.length > 0) {
+    if (preBuiltContext) {
+      // Use pre-built context from client (prefetch flow)
+      console.log("\x1b[33m[TEMP] ⚡ Using pre-built context from client\x1b[0m");
+      context = preBuiltContext;
+    } else if (subjectIds && subjectIds.length > 0) {
+      // Fall back to server-side context building (old flow)
+      console.log("\x1b[33m[TEMP] 🔄 Building context server-side (fallback)\x1b[0m");
       if (subjectIds.length === 1) {
         const result = await buildContextForSubject(subjectIds[0]);
         context = result.contextText;
@@ -31,6 +37,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // No specific subjects — use family summary
+      console.log("\x1b[33m[TEMP] 🔄 Building family summary server-side\x1b[0m");
       context = await buildFamilySummaryContext();
     }
 

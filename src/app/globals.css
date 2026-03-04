@@ -40,6 +40,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Hide scrollbar on event pages (playground) */
+html:has(.scrollbar-hide) {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html:has(.scrollbar-hide)::-webkit-scrollbar {
+  display: none;
+}
+
 /* Base body styles */
 body {
   background-color: var(--color-cream);
@@ -107,4 +116,13 @@ h1, h2, h3, h4 {
     --background: var(--color-cream);
     --foreground: var(--color-text-primary);
   }
+}
+
+/* Hide scrollbar utility - keeps scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

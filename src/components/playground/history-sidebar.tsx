@@ -37,7 +37,7 @@ export function HistorySidebar({
       </div>
 
       {/* Sessions List */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="scrollbar-hide flex-1 overflow-y-auto p-2">
         {sessions.length === 0 ? (
           <p className="p-4 text-center text-sm text-[#A89885]">
             No sessions yet. Start a conversation!

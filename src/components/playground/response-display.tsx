@@ -30,7 +30,7 @@ export function ResponseDisplay({
   return (
     <div
       ref={containerRef}
-      className="response-stage relative min-h-[50vh] overflow-y-auto rounded-2xl bg-[#1A1410] p-8 lg:p-12"
+      className="response-stage relative flex h-full flex-col overflow-y-auto rounded-2xl bg-[#1A1410] p-6 lg:p-8"
       style={{
         background:
           "radial-gradient(ellipse at center, rgba(196,151,59,0.05) 0%, transparent 70%), #1A1410",
@@ -44,7 +44,7 @@ export function ResponseDisplay({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex h-full min-h-[40vh] items-center justify-center"
+            className="flex flex-1 items-center justify-center"
           >
             <motion.p
               animate={{
@@ -69,7 +69,7 @@ export function ResponseDisplay({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex h-full min-h-[40vh] flex-col items-center justify-center"
+            className="flex flex-1 flex-col items-center justify-center"
           >
             <motion.div
               animate={{ rotate: 360 }}
