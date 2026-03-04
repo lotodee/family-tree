@@ -3,11 +3,9 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import type { FamilyTreeNode, LLMSession } from "@/types";
-import { PROMPT_TEMPLATES, type PromptTemplate } from "@/lib/gemini/prompts";
 import { SubjectPicker } from "@/components/playground/subject-picker";
 import { ResponseDisplay } from "@/components/playground/response-display";
 import { PromptInput } from "@/components/playground/prompt-input";
-import { TemplateBar } from "@/components/playground/template-bar";
 import { HistorySidebar } from "@/components/playground/history-sidebar";
 
 interface PlaygroundClientProps {
@@ -22,11 +20,7 @@ export function PlaygroundClient({
   const [selectedSubjects, setSelectedSubjects] = useState<FamilyTreeNode[]>(
     []
   );
-  const [activeTemplate, setActiveTemplate] = useState<PromptTemplate | null>(
-    null
-  );
   const [promptText, setPromptText] = useState("");
-  const [scenarioText, setScenarioText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentImage, setCurrentImage] = useState<string | null>(null);
@@ -45,25 +39,9 @@ export function PlaygroundClient({
     setSelectedSubjects((prev) => prev.filter((s) => s.id !== nodeId));
   }, []);
 
-  const handleSelectTemplate = useCallback((template: PromptTemplate) => {
-    setActiveTemplate(template);
-    setScenarioText("");
-  }, []);
-
   const sendPrompt = useCallback(async () => {
     if (isStreaming) return;
-    if (!promptText.trim() && !activeTemplate) return;
-
-    // Build the final prompt
-    let finalPrompt = promptText;
-    if (activeTemplate && activeTemplate.key !== "free") {
-      const names = selectedSubjects.map((s) => s.display_name);
-      finalPrompt = activeTemplate.buildPrompt(names, scenarioText);
-      // Append any custom text the host added
-      if (promptText.trim()) {
-        finalPrompt += `\n\nAdditional note from the host: ${promptText}`;
-      }
-    }
+    if (!promptText.trim()) return;
 
     setIsStreaming(true);
     setCurrentResponse("");
@@ -74,9 +52,8 @@ export function PlaygroundClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: finalPrompt,
+          prompt: promptText,
           subjectIds: selectedSubjects.map((s) => s.id),
-          templateKey: activeTemplate?.key,
         }),
       });
 
@@ -117,7 +94,7 @@ export function PlaygroundClient({
       // Add to history
       const newSession: LLMSession = {
         id: crypto.randomUUID(),
-        prompt: finalPrompt,
+        prompt: promptText,
         response_text: currentResponse,
         image_url: null,
         subjects: selectedSubjects.map((s) => s.id),
@@ -128,18 +105,9 @@ export function PlaygroundClient({
       setCurrentResponse("Something went wrong. Let's try that again!");
     } finally {
       setIsStreaming(false);
-      // Clear inputs for next prompt
       setPromptText("");
-      setScenarioText("");
     }
-  }, [
-    promptText,
-    activeTemplate,
-    selectedSubjects,
-    scenarioText,
-    isStreaming,
-    currentResponse,
-  ]);
+  }, [promptText, selectedSubjects, isStreaming, currentResponse]);
 
   const generateImage = useCallback(async () => {
     if (isStreaming) return;
@@ -187,14 +155,6 @@ export function PlaygroundClient({
     setCurrentImage(session.image_url);
   }, []);
 
-  // Calculate max selections based on active template
-  const maxSelections =
-    activeTemplate?.subjectCount === "one"
-      ? 1
-      : activeTemplate?.subjectCount === "two"
-        ? 2
-        : undefined;
-
   return (
     <div className="min-h-screen bg-[#0F0A07] text-[#FFF8F0]">
       {/* Header */}
@@ -228,25 +188,13 @@ export function PlaygroundClient({
             isLoadingImage={showImageLoader}
           />
 
-          {/* Template Bar */}
-          <div className="mt-6">
-            <TemplateBar
-              templates={PROMPT_TEMPLATES}
-              activeTemplate={activeTemplate}
-              onSelectTemplate={handleSelectTemplate}
-              scenarioText={scenarioText}
-              onScenarioChange={setScenarioText}
-            />
-          </div>
-
           {/* Subject Picker */}
-          <div className="mt-4">
+          <div className="mt-6">
             <SubjectPicker
               treeNodes={treeNodes}
               selectedSubjects={selectedSubjects}
               onSelect={handleSelectSubject}
               onRemove={handleRemoveSubject}
-              maxSelections={maxSelections}
             />
           </div>
 
@@ -259,13 +207,7 @@ export function PlaygroundClient({
               onGenerateImage={generateImage}
               isStreaming={isStreaming}
               isLoadingImage={showImageLoader}
-              placeholder={
-                activeTemplate?.key === "free"
-                  ? "Type your custom prompt..."
-                  : activeTemplate
-                    ? "Add extra instructions (optional)..."
-                    : "Select a template above or type a custom prompt..."
-              }
+              placeholder="Ask me anything about the family..."
             />
           </div>
         </main>
