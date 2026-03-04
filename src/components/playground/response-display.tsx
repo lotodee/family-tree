@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface ResponseDisplayProps {
   text: string;
   imageUrl: string | null;
+  imageExplanation?: string | null;
   isStreaming: boolean;
   isLoadingImage: boolean;
 }
@@ -13,6 +14,7 @@ interface ResponseDisplayProps {
 export function ResponseDisplay({
   text,
   imageUrl,
+  imageExplanation,
   isStreaming,
   isLoadingImage,
 }: ResponseDisplayProps) {
@@ -82,21 +84,36 @@ export function ResponseDisplay({
           </motion.div>
         )}
 
-        {/* Image Display */}
+        {/* Image Display with Explanation */}
         {imageUrl && (
           <motion.div
             key="image"
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="flex justify-center"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="flex flex-col items-center gap-6"
           >
             <img
               src={imageUrl}
               alt="AI generated family art"
-              className="max-h-[60vh] max-w-full rounded-2xl shadow-2xl"
+              className="max-h-[55vh] max-w-full rounded-2xl shadow-2xl"
               style={{ boxShadow: "0 0 40px rgba(196,151,59,0.3)" }}
             />
+            {imageExplanation && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="max-w-2xl rounded-xl border border-[#C4973B]/20 bg-[#0F0A07]/50 px-6 py-4 text-center"
+              >
+                <p className="text-sm font-medium uppercase tracking-wider text-[#C4973B]">
+                  Why this image?
+                </p>
+                <p className="mt-2 text-base leading-relaxed text-[#FFF8F0]/90">
+                  {imageExplanation}
+                </p>
+              </motion.div>
+            )}
           </motion.div>
         )}
 

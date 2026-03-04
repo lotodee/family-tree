@@ -41,6 +41,7 @@ export function PlaygroundClient({
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [imageExplanation, setImageExplanation] = useState<string | null>(null);
   const [showImageLoader, setShowImageLoader] = useState(false);
   const [history, setHistory] = useState<LLMSession[]>(recentSessions);
   const [showHistory, setShowHistory] = useState(true);
@@ -89,6 +90,7 @@ export function PlaygroundClient({
     setIsStreaming(true);
     setCurrentResponse("");
     setCurrentImage(null);
+    setImageExplanation(null);
 
     try {
       let finalSubjectIds: string[] = [];
@@ -258,10 +260,8 @@ export function PlaygroundClient({
 
         if (data.imageUrl) {
           setCurrentImage(data.imageUrl);
-          // Show the explanation below the image
-          if (data.imageExplanation) {
-            setCurrentResponse(`💡 ${data.imageExplanation}`);
-          }
+          setImageExplanation(data.imageExplanation || null);
+          setCurrentResponse(""); // Clear text response when showing image
         } else {
           setCurrentResponse(
             `🎨 Here's how the AI imagines it:\n\n${data.imageDescription}\n\n${data.imageExplanation ? `💡 ${data.imageExplanation}\n\n` : ""}(Image generation wasn't available — but paint this picture in your minds!)`
@@ -411,6 +411,7 @@ export function PlaygroundClient({
               <ResponseDisplay
                 text={currentResponse}
                 imageUrl={currentImage}
+                imageExplanation={imageExplanation}
                 isStreaming={isStreaming}
                 isLoadingImage={showImageLoader}
               />
