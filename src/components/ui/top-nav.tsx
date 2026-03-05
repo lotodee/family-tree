@@ -22,7 +22,7 @@ export function TopNav({ displayName, treeNodeId }: TopNavProps) {
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo / App Name */}
         <Link href="/dashboard">
-          <FamilyLogo showTagline={false} />
+          <FamilyLogo showTagline={false} size="sm" />
         </Link>
 
         {/* User Avatar */}
