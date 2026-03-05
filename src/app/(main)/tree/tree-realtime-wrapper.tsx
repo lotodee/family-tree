@@ -94,9 +94,11 @@ export function TreeRealtimeWrapper({
       </div>
 
       {/* Tree visualization */}
-      <div className="relative flex-1">
+      <div className="relative flex-1 overflow-hidden bg-cream">
         <TreeBackground />
-        <FamilyOrganogram nodes={nodes} currentUserNodeId={currentUserNodeId} />
+        <div className="relative z-10 h-full">
+          <FamilyOrganogram nodes={nodes} currentUserNodeId={currentUserNodeId} />
+        </div>
       </div>
     </div>
   );

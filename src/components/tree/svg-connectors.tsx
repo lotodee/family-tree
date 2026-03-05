@@ -77,13 +77,13 @@ export function SvgConnectors({ connections, width, height }: SvgConnectorsProps
             animate={{ pathLength: 1, opacity: isSpouse ? 0.5 : 0.7 }}
             transition={{
               pathLength: {
-                duration: 0.6,
-                delay: index * 0.03,
-                ease: "easeOut",
+                duration: 1.2,
+                delay: 0.3 + index * 0.08,
+                ease: "easeInOut",
               },
               opacity: {
-                duration: 0.3,
-                delay: index * 0.03,
+                duration: 0.6,
+                delay: 0.3 + index * 0.08,
               },
             }}
           />

@@ -1,20 +1,29 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 /**
  * Decorative botanical tree silhouette for the family tree page background.
  * Renders a large gold-tinted tree with low opacity and blur.
  */
 export function TreeBackground() {
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-0 flex items-end justify-center overflow-hidden"
+    <motion.div
+      className="pointer-events-none absolute inset-0 flex items-end justify-center overflow-hidden"
+      style={{ zIndex: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.5, ease: "easeOut" }}
       aria-hidden="true"
     >
       <svg
         viewBox="0 0 400 600"
-        className="h-[80vh] w-auto max-w-none opacity-[0.04]"
-        style={{ filter: "blur(3px)" }}
-        fill="var(--color-gold)"
+        className="h-[70vh] w-auto max-w-none"
+        style={{
+          filter: "blur(2px)",
+          opacity: 0.06,
+        }}
+        fill="#C4973B"
       >
         {/* Tree trunk */}
         <path d="M190 600 L190 380 Q185 350 175 320 L175 280 Q180 250 190 220 L190 180 Q195 160 200 150 Q205 160 210 180 L210 220 Q220 250 225 280 L225 320 Q215 350 210 380 L210 600 Z" />
@@ -43,6 +52,6 @@ export function TreeBackground() {
         <ellipse cx="250" cy="80" rx="60" ry="55" />
         <ellipse cx="200" cy="50" rx="70" ry="50" />
       </svg>
-    </div>
+    </motion.div>
   );
 }
