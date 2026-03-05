@@ -3,10 +3,10 @@ import type { FamilyTreeNode, PositionedTreeNode, TreeConnection } from "@/types
 // Layout constants
 const NODE_WIDTH = 130;
 const NODE_HEIGHT = 56;
-const SPOUSE_GAP = 16;
-const SIBLING_GAP = 24;
-const GENERATION_GAP = 140;
-const BRANCH_GAP = 48;
+const SPOUSE_GAP = 12;
+const SIBLING_GAP = 40;
+const GENERATION_GAP = 120;
+const BRANCH_GAP = 64;
 
 interface LayoutResult {
   positionedNodes: PositionedTreeNode[];
@@ -19,13 +19,12 @@ interface NodeWithPosition {
   node: FamilyTreeNode;
   x: number;
   y: number;
-  width: number;
 }
 
 /**
- * Computes a bottom-up tree layout for the family organogram.
- * Groups nodes by generation, positions couples side-by-side,
- * and centers children below their parents.
+ * Computes tree layout for the family organogram.
+ * Positions nodes generation by generation, grouping by branch.
+ * No centering pass to avoid overlaps - just clean left-to-right layout.
  */
 export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
   if (nodes.length === 0) {
@@ -51,51 +50,57 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
   // Build parent-to-children map
   const childrenMap = new Map<string, string[]>();
   nodes.forEach((n) => {
-    if (n.parent_node_id) {
+    if (n.parent_node_id && n.node_type === "biological") {
       if (!childrenMap.has(n.parent_node_id)) {
         childrenMap.set(n.parent_node_id, []);
       }
-      // Only add biological children (not spouses)
-      if (n.node_type === "biological") {
-        childrenMap.get(n.parent_node_id)!.push(n.id);
-      }
+      childrenMap.get(n.parent_node_id)!.push(n.id);
     }
   });
 
   // Track positioned nodes
   const positioned = new Map<string, NodeWithPosition>();
 
-  // Position nodes generation by generation (bottom-up for width calculation)
-  // But render top-down for y coordinates
-  const positionGeneration = (genIndex: number, startX: number): number => {
-    const gen = genKeys[genIndex];
+  // Get branch order based on seed data (children of patriarch)
+  const getBranchOrder = (): string[] => {
+    const gen1 = generations.get(1) || [];
+    const biologicalChildren = gen1
+      .filter((n) => n.node_type === "biological")
+      .sort((a, b) => a.id.localeCompare(b.id)); // Sort by ID for consistent order
+    return biologicalChildren.map((n) => n.branch || "unknown");
+  };
+
+  const branchOrder = getBranchOrder();
+
+  // Position generation 0 (grandparents)
+  const positionGen0 = (): number => {
+    const gen0 = generations.get(0) || [];
+    const patriarch = gen0.find((n) => n.node_type === "biological" && n.gender === "male");
+    const matriarch = gen0.find((n) => n.node_type === "spouse" || n.gender === "female");
+
+    let x = 0;
+    const y = 0;
+
+    if (patriarch) {
+      positioned.set(patriarch.id, { node: patriarch, x, y });
+      x += NODE_WIDTH;
+
+      if (matriarch) {
+        x += SPOUSE_GAP;
+        positioned.set(matriarch.id, { node: matriarch, x, y });
+        x += NODE_WIDTH;
+      }
+    }
+
+    return x;
+  };
+
+  // Position a generation (1, 2, 3, etc.)
+  const positionGeneration = (gen: number): number => {
     const genNodes = generations.get(gen) || [];
     const y = gen * GENERATION_GAP;
 
-    if (gen === 0) {
-      // Root generation: position patriarch and matriarch as couple
-      const biological = genNodes.filter((n) => n.node_type === "biological");
-      const spouses = genNodes.filter((n) => n.node_type === "spouse");
-
-      let x = startX;
-
-      // Find the patriarch (male biological at gen 0)
-      const patriarch = biological.find((n) => n.gender === "male") || biological[0];
-      if (patriarch) {
-        positioned.set(patriarch.id, { node: patriarch, x, y, width: NODE_WIDTH });
-
-        // Position spouse next to patriarch
-        const spouse = spouses[0] || nodeMap.get(patriarch.spouse_node_id || "");
-        if (spouse && !positioned.has(spouse.id)) {
-          x += NODE_WIDTH + SPOUSE_GAP;
-          positioned.set(spouse.id, { node: spouse, x, y, width: NODE_WIDTH });
-        }
-      }
-
-      return x + NODE_WIDTH;
-    }
-
-    // Group children by branch for gen 1+
+    // Group by branch
     const branchGroups = new Map<string, FamilyTreeNode[]>();
     genNodes.forEach((n) => {
       const branch = n.branch || "unknown";
@@ -103,24 +108,17 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
       branchGroups.get(branch)!.push(n);
     });
 
-    // Sort branches by the display order of the primary member
+    // Sort branches by predefined order
     const sortedBranches = Array.from(branchGroups.keys()).sort((a, b) => {
-      const aNodes = branchGroups.get(a)!;
-      const bNodes = branchGroups.get(b)!;
-      const aPrimary = aNodes.find((n) => n.node_type === "biological") || aNodes[0];
-      const bPrimary = bNodes.find((n) => n.node_type === "biological") || bNodes[0];
-
-      // Sort by parent position if possible, otherwise by id
-      const aParentPos = aPrimary?.parent_node_id
-        ? positioned.get(aPrimary.parent_node_id)?.x || 0
-        : 0;
-      const bParentPos = bPrimary?.parent_node_id
-        ? positioned.get(bPrimary.parent_node_id)?.x || 0
-        : 0;
-      return aParentPos - bParentPos;
+      const aIdx = branchOrder.indexOf(a);
+      const bIdx = branchOrder.indexOf(b);
+      if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+      if (aIdx === -1) return 1;
+      if (bIdx === -1) return -1;
+      return aIdx - bIdx;
     });
 
-    let currentX = startX;
+    let currentX = 0;
 
     sortedBranches.forEach((branch, branchIdx) => {
       const branchNodes = branchGroups.get(branch)!;
@@ -129,12 +127,14 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
       const biological = branchNodes.filter((n) => n.node_type === "biological");
       const spouses = branchNodes.filter((n) => n.node_type === "spouse");
 
+      // Sort biological by ID for consistent order
+      biological.sort((a, b) => a.id.localeCompare(b.id));
+
       // Position each biological member with their spouse
       biological.forEach((bio, idx) => {
         if (idx > 0) currentX += SIBLING_GAP;
 
-        // Position biological member
-        positioned.set(bio.id, { node: bio, x: currentX, y, width: NODE_WIDTH });
+        positioned.set(bio.id, { node: bio, x: currentX, y });
         currentX += NODE_WIDTH;
 
         // Position spouse next to them
@@ -143,7 +143,7 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
         );
         if (spouse && !positioned.has(spouse.id)) {
           currentX += SPOUSE_GAP;
-          positioned.set(spouse.id, { node: spouse, x: currentX, y, width: NODE_WIDTH });
+          positioned.set(spouse.id, { node: spouse, x: currentX, y });
           currentX += NODE_WIDTH;
         }
       });
@@ -157,82 +157,26 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
     return currentX;
   };
 
-  // First pass: position all generations
-  let totalWidth = 0;
-  genKeys.forEach((_, idx) => {
-    const endX = positionGeneration(idx, 0);
-    totalWidth = Math.max(totalWidth, endX);
+  // Position all generations
+  let maxWidth = positionGen0();
+
+  genKeys.slice(1).forEach((gen) => {
+    const width = positionGeneration(gen);
+    maxWidth = Math.max(maxWidth, width);
   });
 
-  // Second pass: center children under parents
-  genKeys.slice(1).forEach((gen) => {
-    const genNodes = generations.get(gen) || [];
+  // Center gen0 above the rest
+  const gen0Width =
+    (generations.get(0) || []).length * NODE_WIDTH +
+    ((generations.get(0) || []).length - 1) * SPOUSE_GAP;
+  const gen0Offset = (maxWidth - gen0Width) / 2;
 
-    // Group children by parent
-    const parentGroups = new Map<string, FamilyTreeNode[]>();
-    genNodes.filter((n) => n.node_type === "biological" && n.parent_node_id).forEach((n) => {
-      if (!parentGroups.has(n.parent_node_id!)) {
-        parentGroups.set(n.parent_node_id!, []);
-      }
-      parentGroups.get(n.parent_node_id!)!.push(n);
-    });
-
-    parentGroups.forEach((children, parentId) => {
-      const parentPos = positioned.get(parentId);
-      if (!parentPos) return;
-
-      // Get parent couple center
-      const parent = parentPos.node;
-      const spousePos = parent.spouse_node_id
-        ? positioned.get(parent.spouse_node_id)
-        : null;
-
-      const coupleCenter = spousePos
-        ? (parentPos.x + spousePos.x + NODE_WIDTH) / 2
-        : parentPos.x + NODE_WIDTH / 2;
-
-      // Calculate children block width
-      let childrenWidth = 0;
-      children.forEach((child, idx) => {
-        const childPos = positioned.get(child.id);
-        if (!childPos) return;
-
-        // Include spouse width
-        const spouseId = child.spouse_node_id;
-        const hasSpouse = spouseId && positioned.has(spouseId);
-
-        if (idx > 0) childrenWidth += SIBLING_GAP;
-        childrenWidth += NODE_WIDTH;
-        if (hasSpouse) childrenWidth += SPOUSE_GAP + NODE_WIDTH;
-      });
-
-      // Calculate offset to center children under parent couple
-      const childrenCenter = childrenWidth / 2;
-      const offset = coupleCenter - childrenCenter;
-
-      // Apply offset to children and their spouses
-      let currentOffset = 0;
-      children.forEach((child, idx) => {
-        const childPos = positioned.get(child.id);
-        if (!childPos) return;
-
-        if (idx > 0) currentOffset += SIBLING_GAP;
-
-        const newX = offset + currentOffset;
-        positioned.set(child.id, { ...childPos, x: newX });
-        currentOffset += NODE_WIDTH;
-
-        // Move spouse too
-        if (child.spouse_node_id) {
-          const spousePos = positioned.get(child.spouse_node_id);
-          if (spousePos) {
-            currentOffset += SPOUSE_GAP;
-            positioned.set(child.spouse_node_id, { ...spousePos, x: offset + currentOffset });
-            currentOffset += NODE_WIDTH;
-          }
-        }
-      });
-    });
+  // Apply offset to gen0
+  (generations.get(0) || []).forEach((n) => {
+    const pos = positioned.get(n.id);
+    if (pos) {
+      positioned.set(n.id, { ...pos, x: pos.x + gen0Offset });
+    }
   });
 
   // Build connections
@@ -257,7 +201,7 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
       }
     }
 
-    // Spouse connection
+    // Spouse connection (only from male to avoid duplicates)
     if (node.spouse_node_id && node.gender === "male") {
       const spousePos = positioned.get(node.spouse_node_id);
       if (spousePos) {
@@ -274,42 +218,23 @@ export function computeTreeLayout(nodes: FamilyTreeNode[]): LayoutResult {
     }
   });
 
-  // Calculate bounds
-  let minX = Infinity;
-  let maxX = -Infinity;
-  positioned.forEach((pos) => {
-    minX = Math.min(minX, pos.x);
-    maxX = Math.max(maxX, pos.x + NODE_WIDTH);
-  });
-
-  // Normalize positions (shift so minX = 0)
-  const offsetX = minX < 0 ? -minX : 0;
-
   // Build final positioned nodes
   const positionedNodes: PositionedTreeNode[] = [];
   positioned.forEach((pos, id) => {
     positionedNodes.push({
       ...pos.node,
-      x: pos.x + offsetX,
+      x: pos.x,
       y: pos.y,
       children_ids: childrenMap.get(id) || [],
     });
   });
 
-  // Update connection positions with offset
-  connections.forEach((conn) => {
-    conn.from_x += offsetX;
-    conn.to_x += offsetX;
-  });
-
-  // Recalculate total dimensions
-  const finalWidth = maxX - minX + offsetX;
-  const totalHeight = (maxGen + 1) * GENERATION_GAP;
+  const totalHeight = (maxGen + 1) * GENERATION_GAP + NODE_HEIGHT;
 
   return {
     positionedNodes,
     connections,
-    totalWidth: finalWidth,
+    totalWidth: maxWidth,
     totalHeight,
   };
 }
