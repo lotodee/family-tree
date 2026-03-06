@@ -83,7 +83,7 @@ export default async function DashboardPage() {
     { count: claimedCount },
   ] = await Promise.all([
     getTreeNode(profile.tree_node_id!),
-    getUserAnswerCount(user.id),
+    getUserAnswerCount(user.id, profile.tree_node_id!),
     getActiveQuestionsCount("self"),
     getClaimedNodesCount(),
   ]);

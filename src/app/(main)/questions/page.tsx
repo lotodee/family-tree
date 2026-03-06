@@ -30,11 +30,12 @@ export default async function QuestionsPage() {
       .eq("is_active", true)
       .order("type", { ascending: true })
       .order("display_order", { ascending: true }),
-    // Fetch user's existing answers
+    // Fetch user's existing confirmed answers
     supabase
       .from("answers")
       .select("*")
-      .eq("respondent_id", user.id),
+      .eq("respondent_id", user.id)
+      .eq("is_confirmed", true),
     // Fetch all tree nodes for subject picker
     supabase
       .from("family_tree_nodes")

@@ -63,14 +63,21 @@ export const getAllTreeNodesWithProfiles = cache(async () => {
 
 /**
  * Cached version of getting user's answer count
+ * If treeNodeId is provided, counts only answers where subject_id matches (self answers)
  */
-export const getUserAnswerCount = cache(async (userId: string) => {
+export const getUserAnswerCount = cache(async (userId: string, treeNodeId?: string) => {
   const supabase = await createClient();
-  const { count, error } = await supabase
+  let query = supabase
     .from("answers")
     .select("*", { count: "exact", head: true })
     .eq("respondent_id", userId)
     .eq("is_confirmed", true);
+
+  if (treeNodeId) {
+    query = query.eq("subject_id", treeNodeId);
+  }
+
+  const { count, error } = await query;
   return { count, error };
 });
 
