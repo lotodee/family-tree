@@ -154,25 +154,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Celebration Banner */}
-      <div className="mt-6 px-4">
-        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-gold to-gold-light p-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ivory/90 text-2xl font-bold text-burgundy shadow-inner">
-              100
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-semibold text-burgundy">
-                Grandpa&apos;s Century
-              </h3>
-              <p className="text-sm text-burgundy/80">
-                Celebrating 100 years of love &amp; legacy
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Quick Actions */}
       <div className="mt-6 px-4">
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
