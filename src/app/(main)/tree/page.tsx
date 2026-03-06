@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUser, getUserProfile, getAllTreeNodesWithProfiles } from "@/lib/supabase/cached";
-import { TreeRealtimeWrapper } from "./tree-realtime-wrapper";
+import { TreePageClient } from "./tree-page-client";
 import type { FamilyTreeNodeWithProfile } from "@/types";
 
 export default async function TreePage() {
@@ -27,7 +27,7 @@ export default async function TreePage() {
   const typedNodes = nodes as FamilyTreeNodeWithProfile[];
 
   return (
-    <TreeRealtimeWrapper
+    <TreePageClient
       initialNodes={typedNodes}
       currentUserNodeId={profile.tree_node_id}
     />

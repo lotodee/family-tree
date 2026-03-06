@@ -1,19 +1,32 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap/config";
 
 /**
  * Decorative botanical tree silhouette for the family tree page background.
  * Renders a large gold-tinted tree with low opacity and blur.
+ * Uses GSAP for slow fade-in animation.
  */
 export function TreeBackground() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      gsap.from(ref.current, {
+        opacity: 0,
+        duration: 2.5,
+        ease: "power1.inOut",
+      });
+    },
+    { scope: ref }
+  );
+
   return (
-    <motion.div
+    <div
+      ref={ref}
       className="pointer-events-none absolute inset-0 flex items-end justify-center overflow-hidden"
       style={{ zIndex: 0 }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1.5, ease: "easeOut" }}
       aria-hidden="true"
     >
       <svg
@@ -52,6 +65,6 @@ export function TreeBackground() {
         <ellipse cx="250" cy="80" rx="60" ry="55" />
         <ellipse cx="200" cy="50" rx="70" ry="50" />
       </svg>
-    </motion.div>
+    </div>
   );
 }

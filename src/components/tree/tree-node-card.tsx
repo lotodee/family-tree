@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { gsap, useGSAP } from "@/lib/gsap/config";
 import type { FamilyTreeNode } from "@/types";
 import { NODE_WIDTH, NODE_HEIGHT } from "@/lib/utils/horizontal-tree-layout";
 import { Avatar } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ function getGenerationLabel(generation: number, nodeType: string): string {
  * Tree node card (150x64px) representing a family member.
  * Three states: claimed, unclaimed, deceased.
  * Current user gets "YOU" badge.
+ * Uses GSAP for entrance animation and hover/tap interactions.
  */
 export function TreeNodeCard({
   node,
@@ -42,9 +44,71 @@ export function TreeNodeCard({
   avatarUrl,
 }: TreeNodeCardProps) {
   const router = useRouter();
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const isClaimed = node.is_claimed;
   const isDeceased = node.is_deceased;
+
+  // GSAP entrance animation
+  const { contextSafe } = useGSAP(
+    () => {
+      gsap.fromTo(
+        cardRef.current,
+        { opacity: 0, scale: 0.8, x: -10 },
+        {
+          opacity: isDeceased ? 0.7 : 1,
+          scale: 1,
+          x: 0,
+          duration: 0.45,
+          delay: 0.35 + index * 0.02,
+          ease: "back.out(1.4)",
+        }
+      );
+    },
+    { scope: cardRef }
+  );
+
+  // Hover animations (claimed only)
+  const handleMouseEnter = contextSafe(() => {
+    if (!isClaimed || isDeceased) return;
+    gsap.to(cardRef.current, {
+      scale: 1.05,
+      boxShadow: "0 8px 24px rgba(196, 151, 59, 0.3)",
+      duration: 0.2,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+  });
+
+  const handleMouseLeave = contextSafe(() => {
+    if (!isClaimed || isDeceased) return;
+    gsap.to(cardRef.current, {
+      scale: 1,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+      duration: 0.25,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+  });
+
+  // Tap/press animations
+  const handlePointerDown = contextSafe(() => {
+    if (!isClaimed || isDeceased) return;
+    gsap.to(cardRef.current, {
+      scale: 0.96,
+      duration: 0.08,
+      overwrite: "auto",
+    });
+  });
+
+  const handlePointerUp = contextSafe(() => {
+    if (!isClaimed || isDeceased) return;
+    gsap.to(cardRef.current, {
+      scale: 1,
+      duration: 0.12,
+      overwrite: "auto",
+    });
+  });
 
   const handleClick = () => {
     if (isClaimed && node.claimed_by) {
@@ -57,42 +121,37 @@ export function TreeNodeCard({
     }
   };
 
-  // Determine card styles based on state
-  const cardStyles = {
-    base: "absolute flex items-center gap-3 rounded-lg px-3 cursor-pointer transition-all",
-    claimed: "border-[1.5px] border-gold bg-ivory shadow-sm hover:shadow-md hover:shadow-gold/20",
-    unclaimed: "border-[1.5px] border-dashed border-gold/40 bg-transparent hover:bg-ivory/30",
-    deceased: "border-[1.5px] border-text-secondary/30 bg-cream/50 opacity-75",
-  };
-
-  const stateClass = isDeceased
-    ? cardStyles.deceased
-    : isClaimed
-      ? cardStyles.claimed
-      : cardStyles.unclaimed;
-
   const generationLabel = getGenerationLabel(node.generation, node.node_type);
 
+  // Build className based on state
+  const baseClass = "absolute flex items-center gap-3 rounded-lg px-3 cursor-pointer select-none";
+  const stateClass = isDeceased
+    ? "border-[1.5px] border-text-secondary/30 bg-cream/50"
+    : isClaimed
+      ? "border-[1.5px] border-gold bg-ivory"
+      : "border-[1.5px] border-dashed border-gold/40 bg-transparent";
+
   return (
-    <motion.div
-      className={`${cardStyles.base} ${stateClass}`}
+    <div
+      ref={cardRef}
+      data-node-id={node.id}
+      className={`${baseClass} ${stateClass}`}
       style={{
         left: x,
         top: y,
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
         zIndex: 2,
-      }}
-      initial={{ opacity: 0, scale: 0.85 }}
-      animate={{ opacity: isDeceased ? 0.75 : 1, scale: 1 }}
-      transition={{
-        duration: 0.35,
-        delay: 0.4 + index * 0.025,
-        ease: "easeOut",
+        opacity: 0, // hidden initially — GSAP animates in
+        willChange: "transform, opacity, box-shadow",
+        boxShadow: isClaimed ? "0 2px 8px rgba(0,0,0,0.07)" : "none",
       }}
       onClick={handleClick}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.98 }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       {/* Avatar circle (32px) */}
       {avatarUrl && isClaimed ? (
@@ -137,6 +196,6 @@ export function TreeNodeCard({
           You
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
