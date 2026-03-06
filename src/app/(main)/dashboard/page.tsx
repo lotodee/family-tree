@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Users, Sparkles } from "lucide-react";
-import { LogoutButton } from "@/components/ui/logout-button";
 import { DashboardClient } from "./dashboard-client";
 import {
   getUser,
@@ -190,12 +189,11 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Encouragement + Logout */}
-      <div className="mt-8 space-y-4 px-4 text-center">
+      {/* Encouragement */}
+      <div className="mt-8 px-4 text-center">
         <p className="text-sm text-text-secondary">
           Every story you share becomes part of our family&apos;s history
         </p>
-        <LogoutButton />
       </div>
     </div>
     </DashboardClient>

@@ -29,7 +29,7 @@ export default async function MainLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-cream)]">
-      <TopNav displayName={displayName} treeNodeId={profile?.tree_node_id} avatarUrl={profile?.avatar_url} />
+      <TopNav displayName={displayName} avatarUrl={profile?.avatar_url} />
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
       <BottomNav />
     </div>

@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { FamilyLogo } from "@/components/ui/family-logo";
-import { Avatar } from "@/components/ui/avatar";
+import { ProfileDropdown } from "@/components/ui/profile-dropdown";
 
 interface TopNavProps {
   displayName: string;
-  treeNodeId?: string;
   avatarUrl?: string | null;
 }
 
-export function TopNav({ displayName, treeNodeId, avatarUrl }: TopNavProps) {
+export function TopNav({ displayName, avatarUrl }: TopNavProps) {
   return (
     <nav className="sticky top-0 z-50 border-b border-[var(--color-gold-light)] bg-[var(--color-cream)]">
       <div className="flex items-center justify-between px-4 py-3">
@@ -23,16 +22,8 @@ export function TopNav({ displayName, treeNodeId, avatarUrl }: TopNavProps) {
           </div>
         </Link>
 
-        {/* User Avatar */}
-        <Link
-          href={treeNodeId ? `/profile/${treeNodeId}` : "/dashboard"}
-          className="flex items-center gap-2"
-        >
-          <span className="hidden font-[family-name:var(--font-dm-sans)] text-sm text-[var(--color-text-secondary)] sm:block">
-            {displayName}
-          </span>
-          <Avatar avatarPath={avatarUrl || null} name={displayName} size={32} />
-        </Link>
+        {/* Profile Dropdown */}
+        <ProfileDropdown displayName={displayName} avatarPath={avatarUrl || null} />
       </div>
     </nav>
   );
