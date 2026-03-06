@@ -251,7 +251,7 @@ export function DashboardClient({
       </RopeBoard>
 
       {/* Dashboard content */}
-      <div ref={containerRef} className="min-h-screen bg-cream pb-24">
+      <div ref={containerRef} className="bg-cream pb-24 overflow-hidden">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-burgundy to-burgundy-light px-6 pb-16 pt-8 text-ivory">
           <p className="hero-greeting text-sm font-medium text-gold-light">{greeting}</p>
