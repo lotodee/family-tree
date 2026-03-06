@@ -164,21 +164,21 @@ export function QuestionCard({
       : question.text;
 
   return (
-    <div className="rounded-2xl border border-[var(--color-gold-light)] bg-[var(--color-ivory)] p-6 shadow-sm">
+    <div className="rounded-2xl border border-[var(--color-gold-light)] bg-[var(--color-ivory)] p-4 shadow-sm md:p-6">
       {/* Header */}
-      <div className="mb-4 flex items-start justify-between">
+      <div className="mb-3 flex items-start justify-between md:mb-4">
         <span
-          className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${categoryColors[question.category] || categoryColors.general}`}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize md:px-3 md:py-1 ${categoryColors[question.category] || categoryColors.general}`}
         >
           {question.category}
         </span>
-        <span className="text-sm text-[var(--color-text-secondary)]">
+        <span className="text-xs text-[var(--color-text-secondary)] md:text-sm">
           {questionNumber} of {totalQuestions}
         </span>
       </div>
 
       {/* Question */}
-      <h2 className="mb-6 font-[family-name:var(--font-playfair)] text-xl font-semibold text-[var(--color-burgundy)]">
+      <h2 className="mb-4 font-[family-name:var(--font-playfair)] text-lg font-semibold text-[var(--color-burgundy)] md:mb-6 md:text-xl">
         {questionText}
       </h2>
 

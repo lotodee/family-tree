@@ -227,9 +227,9 @@ export function QuestionsPageClient({
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="mx-auto w-full max-w-6xl px-4 py-4 pb-8">
       {/* Desktop Layout with Side Panels */}
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row lg:gap-6">
         {/* Left Panel - Your Answers (Desktop only) */}
         <div className="hidden w-72 shrink-0 lg:block">
           <div className="sticky top-20 space-y-4">
@@ -276,7 +276,7 @@ export function QuestionsPageClient({
         {/* Main Content */}
         <div className="min-w-0 flex-1">
           {/* Tab Bar */}
-          <div className="sticky top-0 z-10 mb-6 flex rounded-xl bg-white/80 p-1 shadow-sm backdrop-blur">
+          <div className="mb-4 flex rounded-xl bg-white/80 p-1 shadow-sm backdrop-blur md:mb-6">
             <button
               onClick={() => {
                 setPhase("self");
@@ -364,51 +364,53 @@ export function QuestionsPageClient({
                 />
 
                 {/* Navigation */}
-                <div className="mt-6 flex items-center justify-between">
+                <div className="mt-4 flex items-center justify-between gap-2 md:mt-6">
                   <button
                     onClick={goToPrevious}
                     disabled={currentQuestionIndex === 0}
-                    className="flex items-center gap-1 rounded-lg px-4 py-2 text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30"
+                    className="flex shrink-0 items-center gap-0.5 rounded-lg px-2 py-2 text-sm text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30 md:gap-1 md:px-4"
                   >
-                    <ChevronLeft className="h-5 w-5" />
-                    Previous
+                    <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
+                    <span className="hidden sm:inline">Previous</span>
                   </button>
 
-                  {/* Progress Dots */}
-                  <div className="flex gap-1.5">
-                    {currentQuestions.map((_, index) => {
-                      const questionId = currentQuestions[index].id;
-                      const isAnswered = answers.some(
-                        (a) =>
-                          a.question_id === questionId &&
-                          a.subject_id === currentSubjectId
-                      );
-                      const isCurrent = index === currentQuestionIndex;
+                  {/* Progress Dots - scrollable on mobile if many questions */}
+                  <div className="flex min-w-0 flex-1 justify-center overflow-x-auto px-2">
+                    <div className="flex gap-1.5">
+                      {currentQuestions.map((_, index) => {
+                        const questionId = currentQuestions[index].id;
+                        const isAnswered = answers.some(
+                          (a) =>
+                            a.question_id === questionId &&
+                            a.subject_id === currentSubjectId
+                        );
+                        const isCurrent = index === currentQuestionIndex;
 
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentQuestionIndex(index)}
-                          className={`rounded-full transition-all ${
-                            isCurrent
-                              ? "h-3 w-3 bg-[var(--color-burgundy)]"
-                              : isAnswered
-                                ? "h-2 w-2 bg-[var(--color-gold)]"
-                                : "h-2 w-2 bg-[var(--color-gold-light)]"
-                          }`}
-                          aria-label={`Go to question ${index + 1}`}
-                        />
-                      );
-                    })}
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentQuestionIndex(index)}
+                            className={`shrink-0 rounded-full transition-all ${
+                              isCurrent
+                                ? "h-2.5 w-2.5 bg-[var(--color-burgundy)] md:h-3 md:w-3"
+                                : isAnswered
+                                  ? "h-2 w-2 bg-[var(--color-gold)]"
+                                  : "h-2 w-2 bg-[var(--color-gold-light)]"
+                            }`}
+                            aria-label={`Go to question ${index + 1}`}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <button
                     onClick={goToNext}
                     disabled={currentQuestionIndex === currentQuestions.length - 1}
-                    className="flex items-center gap-1 rounded-lg px-4 py-2 text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30"
+                    className="flex shrink-0 items-center gap-0.5 rounded-lg px-2 py-2 text-sm text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-cream)] disabled:opacity-30 md:gap-1 md:px-4"
                   >
-                    Next
-                    <ChevronRight className="h-5 w-5" />
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
                   </button>
                 </div>
               </>
