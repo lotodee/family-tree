@@ -139,3 +139,20 @@ export interface TreeConnection {
   to_y: number;
   type: "parent_child" | "spouse";
 }
+
+// Horizontal tree layout types
+export interface ConnectorLine {
+  id: string;
+  type: "couple" | "parent_to_bracket" | "bracket" | "bracket_to_child";
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface HorizontalTreeLayout {
+  nodes: PositionedTreeNode[];
+  connectors: ConnectorLine[];
+  totalWidth: number;
+  totalHeight: number;
+}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTreeNode } from "@/types";
-import { FamilyOrganogram } from "@/components/tree/family-organogram";
+import { HorizontalFamilyTree } from "@/components/tree/horizontal-family-tree";
 import { TreeBackground } from "@/components/tree/tree-background";
 
 interface TreeRealtimeWrapperProps {
@@ -15,6 +15,7 @@ interface TreeRealtimeWrapperProps {
 /**
  * Client component wrapper that subscribes to Supabase Realtime
  * for live updates when family members join or update.
+ * Features horizontal tree layout with native scrolling.
  */
 export function TreeRealtimeWrapper({
   initialNodes,
@@ -78,8 +79,8 @@ export function TreeRealtimeWrapper({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-      {/* Header with join count */}
-      <div className="flex items-center justify-between border-b border-gold/20 bg-ivory/80 px-4 py-3 backdrop-blur-sm">
+      {/* Sticky header with frosted glass */}
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-gold/20 bg-ivory/80 px-4 py-3 backdrop-blur-sm">
         <h1 className="font-display text-lg font-semibold text-text-primary">
           The Ademiluyi Family
         </h1>
@@ -91,13 +92,32 @@ export function TreeRealtimeWrapper({
             of {totalCount} joined
           </span>
         </div>
+      </header>
+
+      {/* Scrollable tree container */}
+      <div className="relative flex-1 overflow-auto bg-cream">
+        <TreeBackground />
+        <div className="relative z-10 pb-24">
+          <HorizontalFamilyTree
+            nodes={nodes}
+            currentUserNodeId={currentUserNodeId || undefined}
+          />
+        </div>
       </div>
 
-      {/* Tree visualization */}
-      <div className="relative flex-1 overflow-hidden bg-cream">
-        <TreeBackground />
-        <div className="relative z-10 h-full">
-          <FamilyOrganogram nodes={nodes} currentUserNodeId={currentUserNodeId} />
+      {/* Floating legend pill */}
+      <div className="fixed bottom-20 left-1/2 z-30 -translate-x-1/2">
+        <div className="flex items-center gap-3 rounded-full bg-ivory/90 px-4 py-2 text-xs shadow-lg backdrop-blur-sm">
+          <span className="text-text-secondary">← Scroll to explore →</span>
+          <span className="h-3 w-px bg-gold/30" />
+          <span className="flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-full bg-gold" />
+            <span className="text-text-secondary">Joined</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-full border border-dashed border-gold/40" />
+            <span className="text-text-secondary">Not yet</span>
+          </span>
         </div>
       </div>
     </div>

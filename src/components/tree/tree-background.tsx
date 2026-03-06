@@ -20,8 +20,8 @@ export function TreeBackground() {
         viewBox="0 0 400 600"
         className="h-[70vh] w-auto max-w-none"
         style={{
-          filter: "blur(2px)",
-          opacity: 0.06,
+          filter: "blur(4px)",
+          opacity: 0.035,
         }}
         fill="#C4973B"
       >
