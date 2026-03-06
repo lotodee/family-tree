@@ -4,10 +4,10 @@ import { useMemo } from "react";
 import { computeHorizontalTreeLayout } from "@/lib/utils/horizontal-tree-layout";
 import { TreeConnectors } from "./tree-connectors";
 import { TreeNodeCard } from "./tree-node-card";
-import type { FamilyTreeNode } from "@/types";
+import type { FamilyTreeNodeWithProfile } from "@/types";
 
 interface HorizontalFamilyTreeProps {
-  nodes: FamilyTreeNode[];
+  nodes: FamilyTreeNodeWithProfile[];
   currentUserNodeId?: string;
 }
 
@@ -21,6 +21,15 @@ export function HorizontalFamilyTree({
   currentUserNodeId,
 }: HorizontalFamilyTreeProps) {
   const layout = useMemo(() => computeHorizontalTreeLayout(nodes), [nodes]);
+
+  // Create a lookup map for profile data (avatar_url)
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    nodes.forEach((n) => {
+      map.set(n.id, n.profile?.avatar_url || null);
+    });
+    return map;
+  }, [nodes]);
 
   if (layout.nodes.length === 0) {
     return (
@@ -51,6 +60,7 @@ export function HorizontalFamilyTree({
           y={pos.y}
           index={i}
           isCurrentUser={pos.id === currentUserNodeId}
+          avatarUrl={profileMap.get(pos.id) || null}
         />
       ))}
     </div>

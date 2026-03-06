@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ChevronLeft, EyeOff, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, EyeOff, User, Camera } from "lucide-react";
+import { toast } from "sonner";
 import type { FamilyTreeNode } from "@/types";
+import { Avatar } from "@/components/ui/avatar";
 
 interface AnswerWithQuestion {
   id: string;
@@ -26,6 +29,7 @@ interface ProfileClientProps {
   currentUserName: string;
   answersAboutSelf: AnswerWithQuestion[];
   answersAboutOthers: AnswerWithQuestion[];
+  avatarUrl: string | null;
 }
 
 export function ProfileClient({
@@ -34,9 +38,10 @@ export function ProfileClient({
   currentUserName,
   answersAboutSelf,
   answersAboutOthers,
+  avatarUrl,
 }: ProfileClientProps) {
   if (isOwnProfile) {
-    return <OwnProfileTrick name={currentUserName} answersAboutSelf={answersAboutSelf} answersAboutOthers={answersAboutOthers} />;
+    return <OwnProfileTrick name={currentUserName} answersAboutSelf={answersAboutSelf} answersAboutOthers={answersAboutOthers} avatarUrl={avatarUrl} />;
   }
 
   // Viewing someone else's profile - show normal view
@@ -64,12 +69,59 @@ function OwnProfileTrick({
   name,
   answersAboutSelf,
   answersAboutOthers,
+  avatarUrl,
 }: {
   name: string;
   answersAboutSelf: AnswerWithQuestion[];
   answersAboutOthers: AnswerWithQuestion[];
+  avatarUrl: string | null;
 }) {
   const firstName = name.split(" ")[0];
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Please choose a JPEG, PNG, or WebP image");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Upload failed");
+      }
+
+      const { avatarUrl: newUrl } = await response.json();
+      setCurrentAvatarUrl(newUrl);
+      toast.success("Photo updated!");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   // Group answers by subject for the tabs
   const answersBySubject = useMemo(() => {
@@ -110,6 +162,32 @@ function OwnProfileTrick({
         <ChevronLeft className="h-4 w-4" />
         Back to Dashboard
       </Link>
+
+      {/* Avatar with upload button */}
+      <div className="mb-6 flex justify-center">
+        <div className="relative">
+          <Avatar avatarPath={currentAvatarUrl} name={name} size={80} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full transition-opacity disabled:opacity-50"
+            style={{
+              backgroundColor: "var(--color-gold)",
+              color: "var(--color-ivory)",
+              border: "2px solid var(--color-ivory)",
+            }}
+          >
+            <Camera className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
 
       {/* The Trick - Funny Message */}
       <motion.div

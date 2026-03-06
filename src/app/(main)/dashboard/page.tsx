@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Users, Sparkles } from "lucide-react";
 import { LogoutButton } from "@/components/ui/logout-button";
+import { DashboardClient } from "./dashboard-client";
 import {
   getUser,
   getUserProfile,
@@ -100,6 +101,7 @@ export default async function DashboardPage() {
     : "";
 
   return (
+    <DashboardClient avatarUrl={profile.avatar_url}>
     <div className="min-h-screen bg-cream pb-24">
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-burgundy to-burgundy-light px-6 pb-16 pt-8 text-ivory">
@@ -196,5 +198,6 @@ export default async function DashboardPage() {
         <LogoutButton />
       </div>
     </div>
+    </DashboardClient>
   );
 }

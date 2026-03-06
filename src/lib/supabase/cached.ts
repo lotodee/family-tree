@@ -50,6 +50,18 @@ export const getAllTreeNodes = cache(async () => {
 });
 
 /**
+ * Cached version of getting all tree nodes with profile avatars
+ */
+export const getAllTreeNodesWithProfiles = cache(async () => {
+  const supabase = await createClient();
+  const { data: nodes, error } = await supabase
+    .from("family_tree_nodes")
+    .select("*, profile:claimed_by(avatar_url)")
+    .order("generation", { ascending: true });
+  return { nodes, error };
+});
+
+/**
  * Cached version of getting user's answer count
  */
 export const getUserAnswerCount = cache(async (userId: string) => {

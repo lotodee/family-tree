@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { FamilyTreeNode } from "@/types";
 import { NODE_WIDTH, NODE_HEIGHT } from "@/lib/utils/horizontal-tree-layout";
+import { Avatar } from "@/components/ui/avatar";
 
 interface TreeNodeCardProps {
   node: FamilyTreeNode;
@@ -12,6 +13,7 @@ interface TreeNodeCardProps {
   y: number;
   index: number;
   isCurrentUser: boolean;
+  avatarUrl: string | null;
 }
 
 /**
@@ -37,19 +39,12 @@ export function TreeNodeCard({
   y,
   index,
   isCurrentUser,
+  avatarUrl,
 }: TreeNodeCardProps) {
   const router = useRouter();
 
   const isClaimed = node.is_claimed;
   const isDeceased = node.is_deceased;
-
-  // Get initials from display name
-  const initials = node.display_name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
   const handleClick = () => {
     if (isClaimed && node.claimed_by) {
@@ -99,18 +94,27 @@ export function TreeNodeCard({
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.98 }}
     >
-      {/* Initials circle (32px) */}
-      <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-          isDeceased
-            ? "border border-text-secondary/30 bg-transparent text-text-secondary"
-            : isClaimed
-              ? "bg-gold text-cream"
-              : "border border-gold/40 bg-transparent text-gold/60"
-        }`}
-      >
-        {initials}
-      </div>
+      {/* Avatar circle (32px) */}
+      {avatarUrl && isClaimed ? (
+        <Avatar avatarPath={avatarUrl} name={node.display_name} size={32} className="shrink-0" />
+      ) : (
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+            isDeceased
+              ? "border border-text-secondary/30 bg-transparent text-text-secondary"
+              : isClaimed
+                ? "bg-gold text-cream"
+                : "border border-gold/40 bg-transparent text-gold/60"
+          }`}
+        >
+          {node.display_name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2)}
+        </div>
+      )}
 
       {/* Name and generation label */}
       <div className="min-w-0 flex-1">

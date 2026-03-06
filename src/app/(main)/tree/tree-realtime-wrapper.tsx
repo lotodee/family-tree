@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import type { FamilyTreeNode } from "@/types";
+import type { FamilyTreeNode, FamilyTreeNodeWithProfile } from "@/types";
 import { HorizontalFamilyTree } from "@/components/tree/horizontal-family-tree";
 import { TreeBackground } from "@/components/tree/tree-background";
 
 interface TreeRealtimeWrapperProps {
-  initialNodes: FamilyTreeNode[];
+  initialNodes: FamilyTreeNodeWithProfile[];
   currentUserNodeId: string | null;
 }
 
@@ -21,7 +21,7 @@ export function TreeRealtimeWrapper({
   initialNodes,
   currentUserNodeId,
 }: TreeRealtimeWrapperProps) {
-  const [nodes, setNodes] = useState<FamilyTreeNode[]>(initialNodes);
+  const [nodes, setNodes] = useState<FamilyTreeNodeWithProfile[]>(initialNodes);
 
   useEffect(() => {
     const supabase = createClient();
@@ -48,9 +48,11 @@ export function TreeRealtimeWrapper({
               });
             }
 
-            // Update the node in state
+            // Update the node in state, preserving profile data
             setNodes((prev) =>
-              prev.map((n) => (n.id === updatedNode.id ? updatedNode : n))
+              prev.map((n) =>
+                n.id === updatedNode.id ? { ...updatedNode, profile: n.profile } : n
+              )
             );
           } else if (payload.eventType === "INSERT") {
             const newNode = payload.new as FamilyTreeNode;

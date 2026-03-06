@@ -110,6 +110,7 @@ export default async function ProfilePage({
       currentUserName={currentUserName}
       answersAboutSelf={answersAboutSelf}
       answersAboutOthers={answersAboutOthers}
+      avatarUrl={isOwnProfile ? currentProfile.avatar_url : null}
     />
   );
 }

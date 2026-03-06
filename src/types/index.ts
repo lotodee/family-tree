@@ -156,3 +156,8 @@ export interface HorizontalTreeLayout {
   totalWidth: number;
   totalHeight: number;
 }
+
+// Tree node with joined profile data for avatar display
+export interface FamilyTreeNodeWithProfile extends FamilyTreeNode {
+  profile?: { avatar_url: string | null } | null;
+}
