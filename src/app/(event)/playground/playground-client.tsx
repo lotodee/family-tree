@@ -353,47 +353,66 @@ export function PlaygroundClient({
   return (
     <div className="text-[#FFF8F0]">
       {/* Header */}
-      <header className="border-b border-[#2A2118] px-6 py-4">
+      <header className="relative border-b border-[#2A2118]/50 bg-gradient-to-b from-[#1A1410] to-transparent px-6 py-5">
+        {/* Decorative gold line */}
+        <div className="absolute bottom-0 left-1/2 h-[1px] w-32 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#C4973B]/50 to-transparent" />
+
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div>
-            <h1 className="flex items-center gap-3 font-serif text-2xl tracking-[0.15em] text-[#C4973B]">
-              <StarIcon size={20} /> MICHAEL ADEMILUYI&apos;S 100TH <StarIcon size={20} />
-            </h1>
-            <p className="mt-1 text-sm text-[#A89885]">
-              The Ademiluyi Family AI
-              {isLoadingCache && (
-                <span className="ml-2 text-[#C4973B]">• Loading family data...</span>
-              )}
-              {cacheError && (
-                <span className="ml-2 text-red-400">• {cacheError}</span>
-              )}
-              {cache && !isLoadingCache && (
-                <span className="ml-2 text-green-400">• Ready</span>
-              )}
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#C4973B]/30 bg-[#C4973B]/10">
+                <StarIcon size={18} className="text-[#C4973B]" />
+              </div>
+              <div>
+                <h1 className="font-serif text-lg font-medium tracking-wide text-[#FFF8F0]">
+                  Family AI Playground
+                </h1>
+                <p className="flex items-center gap-2 text-xs text-[#A89885]">
+                  <span>Michael Ademiluyi&apos;s 100th Celebration</span>
+                  {isLoadingCache && (
+                    <span className="flex items-center gap-1 text-[#C4973B]">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#C4973B]" />
+                      Loading...
+                    </span>
+                  )}
+                  {cacheError && (
+                    <span className="flex items-center gap-1 text-red-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                      Error
+                    </span>
+                  )}
+                  {cache && !isLoadingCache && (
+                    <span className="flex items-center gap-1 text-emerald-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      Ready
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {cache && (
               <button
                 onClick={refreshCache}
                 disabled={isLoadingCache}
-                className="rounded-lg bg-[#1A1410] p-2 text-[#A89885] transition hover:bg-[#2A2118] disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#2A2118] bg-[#0F0A07] text-[#A89885] transition hover:border-[#C4973B]/50 hover:text-[#C4973B] disabled:opacity-50"
                 title="Refresh family data"
               >
-                <RefreshIcon size={18} isSpinning={isLoadingCache} />
+                <RefreshIcon size={16} isSpinning={isLoadingCache} />
               </button>
             )}
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="rounded-lg bg-[#1A1410] px-4 py-2 text-sm text-[#A89885] transition hover:bg-[#2A2118]"
+              className="hidden rounded-full border border-[#2A2118] bg-[#0F0A07] px-4 py-2 text-xs font-medium text-[#A89885] transition hover:border-[#C4973B]/50 hover:text-[#C4973B] lg:block"
             >
-              {showHistory ? "Hide" : "History"}
+              {showHistory ? "Hide History" : "Show History"}
             </button>
           </div>
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex h-[calc(100vh-81px)]">
         {/* Main Content Area - flex column to push input to bottom */}
         <main
           className={`flex flex-1 flex-col transition-all duration-300 ${
@@ -462,19 +481,20 @@ export function PlaygroundClient({
           x: showHistory ? 0 : 280,
         }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-[73px] hidden h-[calc(100vh-73px)] w-[320px] border-l border-[#2A2118] bg-[#0F0A07] lg:block"
+        className="fixed right-0 top-[81px] hidden h-[calc(100vh-81px)] w-[320px] border-l border-[#2A2118]/50 bg-[#0F0A07] lg:block"
       >
         {/* Collapse toggle button */}
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="absolute -left-10 top-4 flex h-10 w-10 items-center justify-center rounded-l-lg border border-r-0 border-[#2A2118] bg-[#1A1410] text-[#A89885] transition hover:bg-[#2A2118] hover:text-[#C4973B]"
+          className="absolute -left-8 top-6 flex h-8 w-8 items-center justify-center rounded-full border border-[#2A2118] bg-[#1A1410] text-[#A89885] shadow-lg transition hover:border-[#C4973B]/50 hover:text-[#C4973B]"
           title={showHistory ? "Hide history" : "Show history"}
         >
           <motion.span
             animate={{ rotate: showHistory ? 0 : 180 }}
             transition={{ duration: 0.2 }}
+            className="text-sm"
           >
-            {">"}
+            ›
           </motion.span>
         </button>
         <div className="scrollbar-hide h-full overflow-y-auto">
