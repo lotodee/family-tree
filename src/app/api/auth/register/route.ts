@@ -236,17 +236,14 @@ export async function POST(request: NextRequest) {
       // Non-fatal: profile exists, just missing tree_node_id link
     }
 
-    // 7. Send password email (best-effort — does not block registration)
-    const emailResult = await sendPasswordEmail({
+    // 7. Send password email (fire-and-forget — does not block registration)
+    sendPasswordEmail({
       to: email,
       name: resolvedFullName,
       password,
+    }).catch((error) => {
+      console.warn("Password email failed to send:", error);
     });
-
-    if (!emailResult.success) {
-      console.warn("Password email failed to send:", emailResult.error);
-      // Do NOT fail the registration. The password is shown on screen.
-    }
 
     return NextResponse.json({
       success: true,
@@ -254,7 +251,6 @@ export async function POST(request: NextRequest) {
       fullName: resolvedFullName,
       userId,
       treeNodeId,
-      emailSent: emailResult.success,
     });
   } catch (error) {
     console.error("Registration error:", error);
