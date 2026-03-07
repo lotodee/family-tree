@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Users, Sparkles } from "lucide-react";
+import { WandIcon } from "@/components/icons";
 import { RopeBoard } from "@/components/ui/rope-board";
 import { AvatarUploadPrompt } from "@/components/ui/avatar-upload-prompt";
 import { gsap, useGSAP } from "@/lib/gsap/config";
@@ -334,6 +335,7 @@ export function DashboardClient({
               </div>
             </Link>
           </div>
+
         </div>
 
         {/* Encouragement */}
@@ -343,6 +345,15 @@ export function DashboardClient({
           </p>
         </div>
       </div>
+
+      {/* Floating AI Playground Button */}
+      <Link
+        href="/playground"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-burgundy to-burgundy-light shadow-lg shadow-burgundy/30 transition-transform hover:scale-110 active:scale-95"
+        title="AI Playground"
+      >
+        <WandIcon size={24} className="text-gold-light" />
+      </Link>
     </>
   );
 }

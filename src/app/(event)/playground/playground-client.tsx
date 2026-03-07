@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import type { FamilyTreeNode, LLMSession } from "@/types";
 import { SubjectPicker } from "@/components/playground/subject-picker";
 import { ResponseDisplay } from "@/components/playground/response-display";
 import { PromptInput, type ImageStyle } from "@/components/playground/prompt-input";
 import { HistorySidebar } from "@/components/playground/history-sidebar";
-import { StarIcon, RefreshIcon, PaletteIcon } from "@/components/icons";
+import { StarIcon, RefreshIcon, HomeIcon } from "@/components/icons";
 
 // Sprint 5: Smart Context imports
 import {
@@ -358,7 +359,16 @@ export function PlaygroundClient({
         <div className="absolute bottom-0 left-1/2 h-[1px] w-32 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#C4973B]/50 to-transparent" />
 
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div>
+          <div className="flex items-center gap-4">
+            {/* Home button */}
+            <Link
+              href="/dashboard"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#2A2118] bg-[#0F0A07] text-[#A89885] transition hover:border-[#C4973B]/50 hover:text-[#C4973B]"
+              title="Back to Dashboard"
+            >
+              <HomeIcon size={16} />
+            </Link>
+
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#C4973B]/30 bg-[#C4973B]/10">
                 <StarIcon size={18} className="text-[#C4973B]" />
@@ -391,6 +401,7 @@ export function PlaygroundClient({
               </div>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
             {cache && (
               <button

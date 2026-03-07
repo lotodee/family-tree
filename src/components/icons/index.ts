@@ -20,3 +20,5 @@ export { TrophyIcon } from "./trophy-icon";
 export { CrownIcon } from "./crown-icon";
 export { ToastIcon } from "./toast-icon";
 export { TagIcon } from "./tag-icon";
+export { WandIcon } from "./wand-icon";
+export { HomeIcon } from "./home-icon";
