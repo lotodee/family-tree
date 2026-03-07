@@ -51,6 +51,7 @@ export interface Profile {
   id: string;
   full_name: string;
   email: string;
+  age: number | null;
   relationship_type: RelationshipType;
   father_name: string | null;
   mother_name: string | null;

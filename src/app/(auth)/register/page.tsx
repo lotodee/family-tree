@@ -9,8 +9,9 @@ import { Check, Copy, Loader2, ChevronLeft } from "lucide-react";
 import { z } from "zod";
 import type { FamilyTreeNode } from "@/types";
 
-const emailSchema = z.object({
+const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
+  age: z.number().min(1, "Please enter your age").max(120, "Please enter a valid age"),
 });
 
 type Step = 1 | 2 | 3;
@@ -38,7 +39,9 @@ export default function RegisterPage() {
     motherName: "",
   });
   const [email, setEmail] = useState("");
+  const [age, setAge] = useState<number | "">("");
   const [emailError, setEmailError] = useState("");
+  const [ageError, setAgeError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingNodes, setIsLoadingNodes] = useState(true);
   const [password, setPassword] = useState("");
@@ -104,21 +107,28 @@ export default function RegisterPage() {
 
   // Handle registration
   const handleRegister = async () => {
-    // Validate email
-    const result = emailSchema.safeParse({ email });
+    // Validate email and age
+    const ageNum = typeof age === "number" ? age : parseInt(String(age), 10);
+    const result = formSchema.safeParse({ email, age: ageNum });
     if (!result.success) {
-      setEmailError(result.error.issues[0].message);
+      const errors = result.error.issues;
+      const emailErr = errors.find((e) => e.path[0] === "email");
+      const ageErr = errors.find((e) => e.path[0] === "age");
+      if (emailErr) setEmailError(emailErr.message);
+      if (ageErr) setAgeError(ageErr.message);
       return;
     }
     setEmailError("");
+    setAgeError("");
     setIsLoading(true);
 
     try {
       const payload = selectedNode
-        ? { nodeId: selectedNode.id, email }
+        ? { nodeId: selectedNode.id, email, age: ageNum }
         : {
             nodeId: null,
             email,
+            age: ageNum,
             fullName: manualForm.fullName,
             relationshipType: manualForm.relationshipType,
             fatherName: manualForm.fatherName || null,
@@ -430,7 +440,7 @@ export default function RegisterPage() {
               Welcome, {selectedNode?.display_name || manualForm.fullName}!
             </h1>
             <p className="mb-8 font-[family-name:var(--font-dm-sans)] text-[var(--color-text-secondary)]">
-              Enter your email so we can send you your login details.
+              Enter your details to complete registration.
             </p>
 
             <div className="space-y-4">
@@ -457,9 +467,34 @@ export default function RegisterPage() {
                 )}
               </div>
 
+              <div>
+                <label className="mb-2 block font-[family-name:var(--font-dm-sans)] text-sm font-medium text-[var(--color-text-secondary)]">
+                  Your Age
+                </label>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAge(val === "" ? "" : parseInt(val, 10));
+                    setAgeError("");
+                  }}
+                  min={1}
+                  max={120}
+                  inputMode="numeric"
+                  className="w-full rounded-lg border border-[var(--color-gold-light)] bg-white px-4 py-4 text-lg text-[var(--color-text-primary)] focus:border-[var(--color-gold)] focus:outline-none"
+                  placeholder="Enter your age"
+                />
+                {ageError && (
+                  <p className="mt-2 text-sm text-[var(--color-error)]">
+                    {ageError}
+                  </p>
+                )}
+              </div>
+
               <button
                 onClick={handleRegister}
-                disabled={isLoading || !email}
+                disabled={isLoading || !email || !age}
                 className="w-full rounded-full bg-[var(--color-gold)] py-4 font-[family-name:var(--font-dm-sans)] text-lg font-semibold text-[var(--color-text-primary)] transition-all hover:bg-[var(--color-gold-light)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? (

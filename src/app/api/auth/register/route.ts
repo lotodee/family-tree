@@ -6,12 +6,15 @@ import { sendPasswordEmail } from "@/lib/email/send-password";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nodeId, email, fullName, relationshipType, fatherName, motherName } =
+    const { nodeId, email, age, fullName, relationshipType, fatherName, motherName } =
       body;
 
     // Validate required fields
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
+    if (!age || typeof age !== "number" || age < 1 || age > 120) {
+      return NextResponse.json({ error: "Valid age is required" }, { status: 400 });
     }
 
     // Check if email is already registered
@@ -110,6 +113,7 @@ export async function POST(request: NextRequest) {
         id: userId,
         full_name: resolvedFullName,
         email,
+        age,
         relationship_type: resolvedRelType,
         father_name: resolvedFather,
         mother_name: resolvedMother,
