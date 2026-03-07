@@ -138,11 +138,16 @@ function getImagenClient(): GoogleGenAI {
   return _imagenClient;
 }
 
-export async function generateImages(prompt: string) {
-  const client = getImagenClient();
-  const model = "imagen-4.0-fast-generate-001";
+export type ImageStyle = "cartoony" | "realistic";
 
-  console.log("[GenAI] Generating image with model:", model);
+export async function generateImages(prompt: string, style: ImageStyle = "cartoony") {
+  const client = getImagenClient();
+  // Cartoony: fast model, Realistic: high-quality model (takes longer)
+  const model = style === "realistic"
+    ? "imagen-3.0-generate-001"
+    : "imagen-4.0-fast-generate-001";
+
+  console.log("[GenAI] Generating image with model:", model, "style:", style);
 
   return client.models.generateImages({
     model,

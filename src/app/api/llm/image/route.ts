@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateContent, generateImages } from "@/lib/gemini/client";
+import { generateContent, generateImages, type ImageStyle } from "@/lib/gemini/client";
 import {
   buildContextForSubject,
   buildContextForMultipleSubjects,
@@ -8,7 +8,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, subjectIds, context: preBuiltContext } = await request.json();
+    const { prompt, subjectIds, context: preBuiltContext, style = "cartoony" } = await request.json() as {
+      prompt: string;
+      subjectIds?: string[];
+      context?: string;
+      style?: ImageStyle;
+    };
 
     // Build context (use pre-built if provided, otherwise build server-side)
     let context: string;
@@ -77,7 +82,7 @@ Be specific about the scene, action, expression, and visual elements in the imag
 
     // Generate image using Nano Banana
     try {
-      const imageResult = await generateImages(imagePrompt);
+      const imageResult = await generateImages(imagePrompt, style);
       const generatedImage = imageResult.generatedImages?.[0];
 
       if (generatedImage?.image?.imageBytes) {

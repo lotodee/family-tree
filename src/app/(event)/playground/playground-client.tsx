@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import type { FamilyTreeNode, LLMSession } from "@/types";
 import { SubjectPicker } from "@/components/playground/subject-picker";
 import { ResponseDisplay } from "@/components/playground/response-display";
-import { PromptInput } from "@/components/playground/prompt-input";
+import { PromptInput, type ImageStyle } from "@/components/playground/prompt-input";
 import { HistorySidebar } from "@/components/playground/history-sidebar";
 import { StarIcon, RefreshIcon, PaletteIcon } from "@/components/icons";
 
@@ -46,6 +46,7 @@ export function PlaygroundClient({
   const [showImageLoader, setShowImageLoader] = useState(false);
   const [history, setHistory] = useState<LLMSession[]>(recentSessions);
   const [showHistory, setShowHistory] = useState(true);
+  const [imageStyle, setImageStyle] = useState<ImageStyle>("cartoony");
 
   // Sprint 5: Cache state
   const [cache, setCache] = useState<FamilyDataCache | null>(null);
@@ -156,7 +157,7 @@ export function PlaygroundClient({
       console.log("\x1b[35m[TEMP] 🎯 Media type:", mediaType, "\x1b[0m");
 
       if (mediaType === "image") {
-        await generateImageWithContext(promptText, finalSubjectIds, context);
+        await generateImageWithContext(promptText, finalSubjectIds, context, imageStyle);
       } else if (mediaType === "video") {
         // Video: fall back to text with video-style prompt
         const videoPrompt = `The host wants a video about this. Since we can't generate video yet, describe in vivid detail what this video would look like — the scenes, the music, the energy. Make it so vivid the audience can picture it.\n\nOriginal request: ${promptText}`;
@@ -173,7 +174,7 @@ export function PlaygroundClient({
       setIsStreaming(false);
       setPromptText("");
     }
-  }, [promptText, selectedSubjects, cache, isStreaming, showImageLoader]);
+  }, [promptText, selectedSubjects, cache, isStreaming, showImageLoader, imageStyle]);
 
   // Stream text response with pre-built context
   const streamTextResponse = useCallback(
@@ -241,8 +242,8 @@ export function PlaygroundClient({
 
   // Generate image with pre-built context
   const generateImageWithContext = useCallback(
-    async (prompt: string, subjectIds: string[], context?: string) => {
-      console.log("\x1b[36m[TEMP] 🖼️ Sending image generation request\x1b[0m");
+    async (prompt: string, subjectIds: string[], context?: string, style: ImageStyle = "cartoony") => {
+      console.log("\x1b[36m[TEMP] 🖼️ Sending image generation request, style:", style, "\x1b[0m");
 
       setShowImageLoader(true);
 
@@ -254,6 +255,7 @@ export function PlaygroundClient({
             prompt,
             subjectIds,
             context, // Pass pre-built context
+            style,   // Pass image style
           }),
         });
 
@@ -320,10 +322,11 @@ export function PlaygroundClient({
     await generateImageWithContext(
       prompt,
       selectedSubjects.map((s) => s.id),
-      context
+      context,
+      imageStyle
     );
     setPromptText("");
-  }, [promptText, selectedSubjects, isStreaming, showImageLoader, cache, generateImageWithContext]);
+  }, [promptText, selectedSubjects, isStreaming, showImageLoader, cache, generateImageWithContext, imageStyle]);
 
   const handleHistorySelect = useCallback((session: LLMSession) => {
     setCurrentResponse(session.response_text || "");
@@ -444,6 +447,8 @@ export function PlaygroundClient({
                   ? "Ask me anything about the family... (try: 'Introduce Dotun in the funniest way')"
                   : "Loading family data..."
               }
+              imageStyle={imageStyle}
+              onImageStyleChange={setImageStyle}
             />
           </div>
         </main>
