@@ -378,13 +378,6 @@ export function SettingsClient({ profile, email }: SettingsClientProps) {
                     : "—"}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span style={{ color: "var(--color-text-secondary)" }}>Role</span>
-                <span style={{ color: "var(--color-text-primary)" }}>
-                  {profile.relationship_type.charAt(0).toUpperCase() +
-                    profile.relationship_type.slice(1)}
-                </span>
-              </div>
             </>
           )}
         </div>

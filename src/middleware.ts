@@ -1,8 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes that don't require authentication
 const PUBLIC_ROUTES = ["/", "/login", "/register"];
+
+// Routes that start with /invite/ are public (invite landing pages)
+function isPublicRoute(pathname: string): boolean {
+  if (PUBLIC_ROUTES.includes(pathname)) return true;
+  if (pathname.startsWith("/invite/")) return true;
+  return false;
+}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -32,19 +38,17 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) => request.nextUrl.pathname === route
-  );
+  const pathname = request.nextUrl.pathname;
 
-  // If user is not logged in and trying to access a protected route, redirect to login
-  if (!user && !isPublicRoute) {
+  // Not logged in + protected route -> redirect to login
+  if (!user && !isPublicRoute(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // If user is logged in and trying to access login/register, redirect to dashboard
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/register")) {
+  // Logged in + trying to access login/register -> redirect to dashboard
+  if (user && (pathname === "/login" || pathname === "/register")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generatePassword } from "@/lib/utils/password-gen";
 import { sendPasswordEmail } from "@/lib/email/send-password";
+
+// Generate a simple 8-character alphanumeric password
+// Excludes ambiguous characters: 0, O, I, l, 1
+function generatePassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  return Array.from({ length: 8 }, () =>
+    chars.charAt(Math.floor(Math.random() * chars.length))
+  ).join("");
+}
 
 export async function POST(request: NextRequest) {
   try {

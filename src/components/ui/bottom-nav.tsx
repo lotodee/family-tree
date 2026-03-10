@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, GitBranch, MessageSquare } from "lucide-react";
+import { Home, GitBranch } from "lucide-react";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -10,7 +10,6 @@ export function BottomNav() {
   const navItems = [
     { href: "/dashboard", label: "Home", icon: Home },
     { href: "/tree", label: "Tree", icon: GitBranch },
-    { href: "/questions", label: "Questions", icon: MessageSquare },
   ];
 
   return (

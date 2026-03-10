@@ -546,9 +546,12 @@ export default function RegisterPage() {
               We&apos;ve also emailed this to you. Save it somewhere safe — you&apos;ll
               need it to log back in.
             </p>
-            <p className="mb-8 rounded-lg bg-[var(--color-gold-light)] bg-opacity-30 p-3 text-xs text-[var(--color-text-secondary)]">
+            <p className="mb-4 rounded-lg bg-[var(--color-gold-light)] bg-opacity-30 p-3 text-xs text-[var(--color-text-secondary)]">
               This is your only chance to see this password on screen. Make sure
               you&apos;ve saved it before continuing.
+            </p>
+            <p className="mb-8 text-xs text-[var(--color-text-secondary)]">
+              You can change your password anytime in Settings after logging in.
             </p>
 
             <button

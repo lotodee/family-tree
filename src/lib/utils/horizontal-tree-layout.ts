@@ -223,7 +223,6 @@ function positionNodes(
     ...unit.person,
     x,
     y: personY,
-    children_ids: unit.children.map((c) => c.person.id),
   };
   positionedNodes.push(personPositioned);
 
@@ -234,7 +233,6 @@ function positionNodes(
       ...unit.spouse,
       x,
       y: spouseY,
-      children_ids: [],
     };
     positionedNodes.push(spousePositioned);
 

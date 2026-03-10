@@ -1,37 +1,42 @@
 // ============================================================
-// ENUMS — must match Supabase enums exactly
+// ENUMS
 // ============================================================
 
 export type Gender = "male" | "female" | "unknown";
 
 export type NodeType = "biological" | "spouse";
 
-export type RelationshipType =
-  | "patriarch"
-  | "matriarch"
-  | "child"
-  | "grandchild"
-  | "spouse";
-
-export type QuestionType = "self" | "about_other";
-
-export type QuestionCategory =
-  | "personality"
-  | "memories"
-  | "funny"
-  | "heartfelt"
-  | "general";
-
-export type AnswerStatus = "draft" | "transcribing" | "review" | "confirmed";
-
-export type InputMethod = "text" | "voice";
+export type MembershipRole = "owner" | "admin" | "member" | "viewer";
 
 // ============================================================
-// DATABASE ROW TYPES — exact shape of each Supabase table row
+// DATABASE ROW TYPES
 // ============================================================
+
+export interface Celebration {
+  id: string;
+  name: string;
+  description: string | null;
+  event_date: string | null;
+  owner_id: string | null;
+  slug: string;
+  cover_image_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface FamilyTreeNode {
   id: string;
+  celebration_id: string;
   display_name: string;
   full_name: string | null;
   gender: Gender;
@@ -43,102 +48,145 @@ export interface FamilyTreeNode {
   claimed_by: string | null;
   is_deceased: boolean;
   node_type: NodeType;
-  status: string | null;
   created_at: string;
+  updated_at: string;
 }
 
-export interface Profile {
+export interface Membership {
   id: string;
-  full_name: string;
-  email: string;
-  age: number | null;
-  relationship_type: RelationshipType;
-  father_name: string | null;
-  mother_name: string | null;
+  user_id: string;
+  celebration_id: string;
   tree_node_id: string | null;
-  avatar_url: string | null;
+  role: MembershipRole;
+  video_limit_secs: number;
+  can_invite: boolean;
+  can_add_to_tree: boolean;
+  can_delete: boolean;
+  invited_by: string | null;
   created_at: string;
+  updated_at: string;
 }
 
-export interface Question {
+export interface Invitation {
   id: string;
-  text: string;
-  type: QuestionType;
-  category: QuestionCategory;
-  is_active: boolean;
-  display_order: number;
+  celebration_id: string;
+  created_by: string;
+  role: MembershipRole;
+  video_limit_secs: number;
+  can_invite: boolean;
+  can_add_to_tree: boolean;
+  can_delete: boolean;
+  code: string;
+  target_node_id: string | null;
+  is_used: boolean;
+  used_by: string | null;
+  expires_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
-export interface Answer {
+export interface Video {
   id: string;
-  respondent_id: string;
-  subject_id: string;
-  question_id: string;
-  answer_text: string | null;
-  voice_url: string | null;
-  raw_transcription: string | null;
-  status: AnswerStatus;
-  input_method: InputMethod;
-  is_confirmed: boolean;
+  celebration_id: string;
+  uploader_id: string;
+  membership_id: string;
+  tree_node_id: string | null;
+  file_path: string;
+  duration_secs: number;
+  file_size_bytes: number | null;
+  mime_type: string | null;
+  thumbnail_url: string | null;
+  title: string | null;
+  is_visible: boolean;
   created_at: string;
+  updated_at: string;
+}
+
+export interface Letter {
+  id: string;
+  celebration_id: string;
+  author_id: string;
+  membership_id: string;
+  tree_node_id: string | null;
+  title: string | null;
+  body: string;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LLMSession {
   id: string;
+  celebration_id: string | null;
   prompt: string;
   response_text: string | null;
   image_url: string | null;
   subjects: string[];
   created_at: string;
+  updated_at: string;
 }
 
 // ============================================================
-// FORM / INPUT TYPES — used for registration, answering, etc.
+// FORM / INPUT TYPES
 // ============================================================
+
+export interface CreateCelebrationFormData {
+  name: string;
+  description: string;
+  event_date: string;
+  slug: string;
+}
 
 export interface RegisterFormData {
-  node_id: string | null;
   email: string;
+  password: string;
   full_name: string;
-  relationship_type: RelationshipType;
-  father_name: string;
-  mother_name: string;
 }
 
-export interface AnswerFormData {
-  subject_id: string;
-  question_id: string;
-  answer_text: string;
-  input_method: InputMethod;
-  voice_url?: string;
-  raw_transcription?: string;
+export interface CreateInviteFormData {
+  role: MembershipRole;
+  video_limit_secs: number;
+  can_invite: boolean;
+  can_add_to_tree: boolean;
+  can_delete: boolean;
+  target_node_id: string | null;
 }
 
-export interface PlaygroundPrompt {
-  prompt: string;
-  subject_ids: string[];
-  template_key?: string;
+export interface AddTreeNodeFormData {
+  display_name: string;
+  full_name: string;
+  gender: Gender;
+  generation: number;
+  parent_node_id: string | null;
+  spouse_node_id: string | null;
+  branch: string | null;
+  node_type: NodeType;
+  is_deceased: boolean;
+}
+
+export interface VideoUploadData {
+  celebration_id: string;
+  tree_node_id: string | null;
+  title: string | null;
+  duration_secs: number;
+  file_size_bytes: number;
+  mime_type: string;
+}
+
+export interface LetterFormData {
+  celebration_id: string;
+  tree_node_id: string | null;
+  title: string;
+  body: string;
 }
 
 // ============================================================
-// COMPUTED / UI TYPES — used by the frontend, not stored in DB
+// COMPUTED / UI TYPES
 // ============================================================
 
 export interface PositionedTreeNode extends FamilyTreeNode {
   x: number;
   y: number;
-  children_ids: string[];
-}
-
-export interface TreeConnection {
-  from_id: string;
-  to_id: string;
-  from_x: number;
-  from_y: number;
-  to_x: number;
-  to_y: number;
-  type: "parent_child" | "spouse";
 }
 
 // Horizontal tree layout types
@@ -156,6 +204,15 @@ export interface HorizontalTreeLayout {
   connectors: ConnectorLine[];
   totalWidth: number;
   totalHeight: number;
+}
+
+export interface MembershipWithProfile extends Membership {
+  profile?: Profile;
+  tree_node?: FamilyTreeNode;
+}
+
+export interface CelebrationWithMembership extends Celebration {
+  membership?: Membership;
 }
 
 // Tree node with joined profile data for avatar display
