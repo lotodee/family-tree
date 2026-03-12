@@ -173,7 +173,7 @@ export function DashboardClient({
             {celebrations.map((celebration) => (
               <Link
                 key={celebration.id}
-                href={`/c/${celebration.slug}`}
+                href={`/c/${celebration.slug}/manage`}
                 className="block"
               >
                 <Card

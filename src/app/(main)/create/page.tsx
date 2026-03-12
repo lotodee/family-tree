@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { COLORS } from "@/lib/config/design";
+import type { Gender } from "@/types";
 
 const createCelebrationSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -22,6 +23,8 @@ const createCelebrationSchema = z.object({
       /^[a-z0-9-]+$/,
       "URL can only contain lowercase letters, numbers, and hyphens"
     ),
+  honoreeName: z.string().min(2, "Name must be at least 2 characters"),
+  honoreeGender: z.enum(["male", "female", "unknown"]),
 });
 
 type FormData = z.infer<typeof createCelebrationSchema>;
@@ -49,6 +52,8 @@ export default function CreateCelebrationPage() {
     description: "",
     event_date: "",
     slug: "",
+    honoreeName: "",
+    honoreeGender: "unknown" as Gender,
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -127,6 +132,15 @@ export default function CreateCelebrationPage() {
     setFormData((prev) => ({ ...prev, event_date: e.target.value }));
   };
 
+  const handleHonoreeNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, honoreeName: e.target.value }));
+    setErrors((prev) => ({ ...prev, honoreeName: undefined }));
+  };
+
+  const handleHonoreeGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData((prev) => ({ ...prev, honoreeGender: e.target.value as Gender }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -159,6 +173,8 @@ export default function CreateCelebrationPage() {
           description: formData.description?.trim() || null,
           event_date: formData.event_date || null,
           slug: formData.slug,
+          honoreeName: formData.honoreeName.trim(),
+          honoreeGender: formData.honoreeGender,
         }),
       });
 
@@ -219,6 +235,53 @@ export default function CreateCelebrationPage() {
               autoFocus
               required
             />
+
+            {/* Honoree Section */}
+            <div
+              className="border-t border-b py-5 my-2"
+              style={{ borderColor: COLORS.goldLight }}
+            >
+              <h3
+                className="text-sm font-semibold mb-4"
+                style={{ color: COLORS.textPrimary }}
+              >
+                Who are you celebrating?
+              </h3>
+
+              <div className="space-y-4">
+                <Input
+                  label="Their Name"
+                  placeholder="e.g., Michael Ademiluyi"
+                  value={formData.honoreeName}
+                  onChange={handleHonoreeNameChange}
+                  error={errors.honoreeName}
+                  required
+                />
+
+                <div>
+                  <label
+                    className="block text-sm font-medium mb-1.5"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    Gender
+                  </label>
+                  <select
+                    value={formData.honoreeGender}
+                    onChange={handleHonoreeGenderChange}
+                    className="w-full h-12 px-4 rounded-lg border text-base outline-none transition-colors focus:border-[var(--color-gold)] focus:shadow-[0_0_0_3px_rgba(196,151,59,0.1)]"
+                    style={{
+                      backgroundColor: COLORS.ivory,
+                      borderColor: COLORS.goldLight,
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="unknown">Other / Unknown</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
             {/* Slug / URL */}
             <div>

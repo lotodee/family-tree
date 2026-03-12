@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, description, event_date, slug } = await request.json();
+    const { name, description, event_date, slug, honoreeName, honoreeGender } =
+      await request.json();
 
     // ── Validate inputs ──────────────────────────────────
     if (!name || typeof name !== "string" || name.trim().length < 3) {
@@ -37,6 +38,14 @@ export async function POST(request: NextRequest) {
     if (!/^[a-z0-9-]+$/.test(slug)) {
       return NextResponse.json(
         { error: "URL can only contain lowercase letters, numbers, and hyphens" },
+        { status: 400 }
+      );
+    }
+
+    // Validate honoree name
+    if (!honoreeName || honoreeName.trim().length < 2) {
+      return NextResponse.json(
+        { error: "Please provide the name of the person being celebrated" },
         { status: 400 }
       );
     }
@@ -76,6 +85,36 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // ── Create the honoree node ──────────────────────────
+    const { data: honoreeNode, error: honoreeError } = await supabaseAdmin
+      .from("family_tree_nodes")
+      .insert({
+        celebration_id: celebration.id,
+        display_name: honoreeName.trim(),
+        full_name: honoreeName.trim(),
+        gender: honoreeGender || "unknown",
+        generation: 0,
+        node_type: "biological",
+      })
+      .select()
+      .single();
+
+    if (honoreeError || !honoreeNode) {
+      console.error("Honoree creation error:", honoreeError);
+      // Rollback celebration
+      await supabaseAdmin.from("celebrations").delete().eq("id", celebration.id);
+      return NextResponse.json(
+        { error: "Failed to set up the celebration" },
+        { status: 500 }
+      );
+    }
+
+    // Link honoree to celebration
+    await supabaseAdmin
+      .from("celebrations")
+      .update({ honoree_node_id: honoreeNode.id })
+      .eq("id", celebration.id);
 
     // ── Create owner membership ──────────────────────────
     const ownerDefaults = ROLE_DEFAULTS.owner;

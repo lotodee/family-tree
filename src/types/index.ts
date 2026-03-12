@@ -8,6 +8,21 @@ export type NodeType = "biological" | "spouse";
 
 export type MembershipRole = "owner" | "admin" | "member" | "viewer";
 
+export type RelationshipType =
+  | "wife"
+  | "husband"
+  | "son"
+  | "daughter"
+  | "father"
+  | "mother"
+  | "brother"
+  | "sister"
+  | "uncle"
+  | "aunt"
+  | "nephew"
+  | "niece"
+  | "cousin";
+
 // ============================================================
 // DATABASE ROW TYPES
 // ============================================================
@@ -21,6 +36,7 @@ export interface Celebration {
   slug: string;
   cover_image_url: string | null;
   is_active: boolean;
+  honoree_node_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -126,6 +142,16 @@ export interface LLMSession {
   updated_at: string;
 }
 
+export interface FamilyRelationship {
+  id: string;
+  celebration_id: string;
+  from_node_id: string;
+  to_node_id: string;
+  relationship_type: RelationshipType;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================================
 // FORM / INPUT TYPES
 // ============================================================
@@ -135,6 +161,8 @@ export interface CreateCelebrationFormData {
   description: string;
   event_date: string;
   slug: string;
+  honoree_name: string;
+  honoree_gender: Gender;
 }
 
 export interface RegisterFormData {
@@ -218,4 +246,36 @@ export interface CelebrationWithMembership extends Celebration {
 // Tree node with joined profile data for avatar display
 export interface FamilyTreeNodeWithProfile extends FamilyTreeNode {
   profile?: { avatar_url: string | null } | null;
+}
+
+// ============================================================
+// RELATIONSHIP TYPES
+// ============================================================
+
+/**
+ * Maps a relationship type to its inverse.
+ * When A is B's "daughter", B is A's "father" (or "mother" depending on B's gender).
+ */
+export type RelationshipInverseMap = {
+  wife: "husband";
+  husband: "wife";
+  son: "father" | "mother";
+  daughter: "father" | "mother";
+  father: "son" | "daughter";
+  mother: "son" | "daughter";
+  brother: "brother" | "sister";
+  sister: "brother" | "sister";
+  uncle: "nephew" | "niece";
+  aunt: "nephew" | "niece";
+  nephew: "uncle" | "aunt";
+  niece: "uncle" | "aunt";
+  cousin: "cousin";
+};
+
+export interface AddRelationshipFormData {
+  fromNodeId: string;
+  toNodeId: string | null; // null if creating a new person
+  relationshipType: RelationshipType;
+  newPersonName?: string; // if creating a new person
+  newPersonGender?: Gender;
 }
