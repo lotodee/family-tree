@@ -9,11 +9,13 @@ import { formatVideoLimit } from "@/lib/config/roles";
 import { VideoPlayer } from "@/components/video/video-player";
 import { MyVideosList } from "@/components/video/my-videos-list";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Video } from "@/types";
 
 export function RecordClient() {
   const { celebration, membership } = useCelebration();
+  const router = useRouter();
   const [myVideos, setMyVideos] = useState<Video[]>([]);
   const [title, setTitle] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -92,6 +94,10 @@ export function RecordClient() {
       setTitle("");
       recorder.resetRecording();
       recorder.stopCamera();
+      // Return to celebration home after a short delay
+      setTimeout(() => {
+        router.push(`/c/${celebration.slug}`);
+      }, 1500);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save video");
     } finally {

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { CelebrationProvider } from "@/lib/contexts/celebration-context";
+import { CelebrationTabs } from "@/components/celebration/celebration-tabs";
 import Link from "next/link";
 
 interface CelebrationLayoutProps {
@@ -83,7 +84,8 @@ export default async function CelebrationLayout({
   // 4. Pass data to children via context provider
   return (
     <CelebrationProvider celebration={celebration} membership={membership}>
-      {children}
+      <CelebrationTabs />
+      <div className="flex-1 overflow-y-auto">{children}</div>
     </CelebrationProvider>
   );
 }

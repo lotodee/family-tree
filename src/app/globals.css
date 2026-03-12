@@ -126,3 +126,8 @@ h1, h2, h3, h4 {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Safe area padding for iOS home indicator */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
