@@ -15,17 +15,14 @@ export default async function MainLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch profile with tree node
+  // Fetch profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, tree_node:tree_node_id(display_name)")
+    .select("*")
     .eq("id", user.id)
     .single();
 
-  const displayName =
-    profile?.tree_node?.display_name ||
-    profile?.full_name ||
-    "Family Member";
+  const displayName = profile?.full_name || "User";
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-cream)]">

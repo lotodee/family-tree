@@ -24,11 +24,9 @@ export async function POST(request: NextRequest) {
 
     if (preBuiltContext) {
       // Use pre-built context from client (prefetch flow)
-      console.log("\x1b[33m[TEMP] ⚡ Using pre-built context from client\x1b[0m");
       context = preBuiltContext;
     } else if (subjectIds && subjectIds.length > 0) {
-      // Fall back to server-side context building (old flow)
-      console.log("\x1b[33m[TEMP] 🔄 Building context server-side (fallback)\x1b[0m");
+      // Fall back to server-side context building
       if (subjectIds.length === 1) {
         const result = await buildContextForSubject(subjectIds[0]);
         context = result.contextText;
@@ -37,7 +35,6 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // No specific subjects — use family summary
-      console.log("\x1b[33m[TEMP] 🔄 Building family summary server-side\x1b[0m");
       context = await buildFamilySummaryContext();
     }
 

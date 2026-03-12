@@ -16,9 +16,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Grandpa Michael's 100th Birthday",
+  title: "Celebrate Together",
   description:
-    "Join the family tree and share your stories for Grandpa Michael Ademiluyi's 100th birthday celebration",
+    "Create celebrations, build your family tree, and collect precious memories from everyone you love.",
 };
 
 export default function RootLayout({

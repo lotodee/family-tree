@@ -19,11 +19,9 @@ export async function POST(request: NextRequest) {
     let context: string;
     if (preBuiltContext) {
       // Use pre-built context from client (prefetch flow)
-      console.log("\x1b[33m[TEMP] ⚡ Using pre-built context for image generation\x1b[0m");
       context = preBuiltContext;
     } else if (subjectIds && subjectIds.length > 0) {
-      // Fall back to server-side context building (old flow)
-      console.log("\x1b[33m[TEMP] 🔄 Building context server-side for image (fallback)\x1b[0m");
+      // Fall back to server-side context building
       if (subjectIds.length === 1) {
         const result = await buildContextForSubject(subjectIds[0]);
         context = result.contextText;
@@ -73,9 +71,6 @@ Be specific about the scene, action, expression, and visual elements in the imag
       // Fallback: use raw text as prompt if JSON parsing fails
       imagePrompt = imagePromptResult.text || prompt;
     }
-
-    console.log("\x1b[35m[TEMP] 🎨 Creative image concept:", imagePrompt, "\x1b[0m");
-    console.log("\x1b[35m[TEMP] 💬 Explanation:", imageExplanation, "\x1b[0m");
 
     let imageUrl: string | null = null;
     let imageDescription = imagePrompt;

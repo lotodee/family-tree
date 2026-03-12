@@ -3,11 +3,10 @@ import { DashboardClient } from "./dashboard-client";
 import {
   getUser,
   getUserProfile,
-  getTreeNode,
-  getUserAnswerCount,
-  getActiveQuestionsCount,
-  getClaimedNodesCount,
+  getUserMemberships,
+  getCelebrationMemberCount,
 } from "@/lib/supabase/cached";
+import type { Celebration, Membership } from "@/types";
 
 // Get time-based greeting
 function getGreeting(): string {
@@ -17,14 +16,20 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-// Get generation label
-function getGenerationLabel(generation: number, nodeType: string): string {
-  if (generation === 0) return "Patriarch";
-  if (nodeType === "spouse") return "Married into the family";
-  if (generation === 1) return "Child of Grandpa";
-  if (generation === 2) return "Grandchild";
-  if (generation === 3) return "Great-grandchild";
-  return "Family member";
+// Membership with nested celebration data
+interface MembershipWithCelebration extends Membership {
+  celebration: Celebration;
+}
+
+// Data shape for client component
+export interface CelebrationCardData {
+  id: string;
+  name: string;
+  slug: string;
+  eventDate: string | null;
+  coverImageUrl: string | null;
+  role: Membership["role"];
+  memberCount: number;
 }
 
 export default async function DashboardPage() {
@@ -34,41 +39,35 @@ export default async function DashboardPage() {
   const { profile } = await getUserProfile(user.id);
   if (!profile) redirect("/register");
 
-  const [
-    { node: treeNode },
-    { count: answeredCount },
-    { count: totalSelfQuestions },
-    { count: claimedCount },
-  ] = await Promise.all([
-    getTreeNode(profile.tree_node_id!),
-    getUserAnswerCount(user.id, profile.tree_node_id!),
-    getActiveQuestionsCount("self"),
-    getClaimedNodesCount(),
-  ]);
+  // Fetch user's memberships with celebration data
+  const { memberships } = await getUserMemberships(user.id);
 
-  const answered = answeredCount || 0;
-  const total = totalSelfQuestions || 10;
-  const progress = Math.round((answered / total) * 100);
-  const joined = claimedCount || 0;
-  const remaining = total - answered;
+  // Get member counts for each celebration
+  const celebrationCards: CelebrationCardData[] = [];
 
-  const firstName = (treeNode?.display_name || profile.full_name).split(" ")[0];
-  const generationLabel = treeNode
-    ? getGenerationLabel(treeNode.generation, treeNode.node_type)
-    : "";
+  if (memberships && memberships.length > 0) {
+    for (const membership of memberships as MembershipWithCelebration[]) {
+      const { count } = await getCelebrationMemberCount(membership.celebration_id);
+      celebrationCards.push({
+        id: membership.celebration.id,
+        name: membership.celebration.name,
+        slug: membership.celebration.slug,
+        eventDate: membership.celebration.event_date,
+        coverImageUrl: membership.celebration.cover_image_url,
+        role: membership.role,
+        memberCount: count,
+      });
+    }
+  }
+
+  const firstName = profile.full_name.split(" ")[0];
 
   return (
     <DashboardClient
       avatarUrl={profile.avatar_url}
       firstName={firstName}
       greeting={getGreeting()}
-      generationLabel={generationLabel}
-      progress={progress}
-      answered={answered}
-      total={total}
-      remaining={remaining}
-      joined={joined}
-      profileNodeId={profile.tree_node_id!}
+      celebrations={celebrationCards}
     />
   );
 }

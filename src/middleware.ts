@@ -40,10 +40,12 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Not logged in + protected route -> redirect to login
+  // Not logged in + protected route -> redirect to login with redirect param
   if (!user && !isPublicRoute(pathname)) {
     const url = request.nextUrl.clone();
+    const intendedPath = request.nextUrl.pathname;
     url.pathname = "/login";
+    url.searchParams.set("redirect", intendedPath);
     return NextResponse.redirect(url);
   }
 

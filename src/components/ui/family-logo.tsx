@@ -4,75 +4,79 @@ interface FamilyLogoProps {
 }
 
 export function FamilyLogo({ showTagline = true, size = "md" }: FamilyLogoProps) {
-  const text = "The Ademiluyis";
   const isSmall = size === "sm";
 
   return (
     <div className={isSmall ? "" : "text-center"}>
-      {/* Animated logo with roof on top of "1" + 00 */}
-      <div className={`relative flex items-end justify-center gap-0.5 ${isSmall ? "mb-0" : "mx-auto mb-6"}`}>
-        {/* The "1" with roof on top */}
-        <div className="relative flex flex-col items-center">
-          {/* Roof / Hypotenuse on top of the 1 */}
-          <div className={`relative mb-0.5 ${isSmall ? "h-2 w-4" : "h-4 w-8"}`}>
-            {/* Left roof slant */}
+      {/* Animated tree/heart logo */}
+      <div
+        className={`flex items-center justify-center ${isSmall ? "" : "mx-auto mb-4"}`}
+      >
+        <div
+          className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-burgundy)] to-[var(--color-burgundy-light)] ${
+            isSmall ? "h-8 w-8" : "h-14 w-14"
+          }`}
+          style={{
+            animation: "popIn 0.4s ease-out forwards",
+            transform: "scale(0)",
+          }}
+        >
+          {/* Simple tree icon made with divs */}
+          <div className="relative">
+            {/* Tree branches */}
             <div
-              className={`absolute left-1/2 h-0.5 w-0 origin-right -translate-x-full rotate-[-35deg] rounded-full bg-[var(--color-burgundy)] ${isSmall ? "top-1" : "top-2"}`}
-              style={{
-                animation: isSmall ? "growBranchSm 0.4s ease-out forwards" : "growBranch 0.4s ease-out forwards",
-              }}
-            />
-            {/* Right roof slant */}
+              className={`absolute left-1/2 -translate-x-1/2 ${
+                isSmall ? "-top-1 h-2 w-3" : "-top-1.5 h-3 w-5"
+              }`}
+            >
+              <div
+                className={`absolute bottom-0 left-0 h-0.5 bg-[var(--color-gold)] ${
+                  isSmall ? "w-1.5" : "w-2.5"
+                }`}
+                style={{
+                  transform: "rotate(-35deg)",
+                  transformOrigin: "right center",
+                  animation: "growBranch 0.3s ease-out 0.3s forwards",
+                  width: 0,
+                }}
+              />
+              <div
+                className={`absolute bottom-0 right-0 h-0.5 bg-[var(--color-gold)] ${
+                  isSmall ? "w-1.5" : "w-2.5"
+                }`}
+                style={{
+                  transform: "rotate(35deg)",
+                  transformOrigin: "left center",
+                  animation: "growBranch 0.3s ease-out 0.4s forwards",
+                  width: 0,
+                }}
+              />
+            </div>
+            {/* Tree trunk */}
             <div
-              className={`absolute left-1/2 h-0.5 w-0 origin-left rotate-[35deg] rounded-full bg-[var(--color-burgundy)] ${isSmall ? "top-1" : "top-2"}`}
+              className={`rounded-sm bg-[var(--color-gold)] ${
+                isSmall ? "h-3 w-0.5" : "h-5 w-1"
+              }`}
               style={{
-                animation: isSmall ? "growBranchSm 0.4s ease-out 0.1s forwards" : "growBranch 0.4s ease-out 0.1s forwards",
+                animation: "growTrunk 0.4s ease-out 0.2s forwards",
+                height: 0,
               }}
             />
           </div>
-          {/* The "1" - vertical stick */}
-          <div
-            className={`h-0 rounded-full bg-[var(--color-burgundy)] ${isSmall ? "w-1" : "w-1.5"}`}
-            style={{
-              animation: isSmall ? "growStickSm 0.5s ease-out 0.2s forwards" : "growStick 0.5s ease-out 0.2s forwards",
-            }}
-          />
         </div>
-        {/* First "0" - gold circle */}
-        <div
-          className={`rounded-full border-[var(--color-gold)] bg-transparent ${isSmall ? "h-4 w-4 border-2" : "h-8 w-8 border-[3px]"}`}
-          style={{
-            animation: "popCircle 0.4s ease-out 0.4s forwards",
-            transform: "scale(0)",
-          }}
-        />
-        {/* Second "0" - gold circle */}
-        <div
-          className={`rounded-full border-[var(--color-gold)] bg-transparent ${isSmall ? "h-4 w-4 border-2" : "h-8 w-8 border-[3px]"}`}
-          style={{
-            animation: "popCircle 0.4s ease-out 0.6s forwards",
-            transform: "scale(0)",
-          }}
-        />
       </div>
 
-      {/* Animated family name - hide for small size */}
+      {/* Platform name - only show for medium size */}
       {!isSmall && (
-        <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[var(--color-burgundy)]">
-        {text.split("").map((char, i) => (
-          <span
-            key={i}
-            className="inline-block"
-            style={{
-              animation: `letterReveal 0.1s ease-out ${0.8 + i * 0.05}s forwards`,
-              opacity: 0,
-              transform: "translateY(10px)",
-            }}
-          >
-            {char === " " ? "\u00A0" : char}
-          </span>
-        ))}
-      </h1>
+        <h1
+          className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[var(--color-burgundy)]"
+          style={{
+            animation: "fadeIn 0.5s ease-out 0.6s forwards",
+            opacity: 0,
+          }}
+        >
+          Celebrate Together
+        </h1>
       )}
 
       {/* Subtle tagline - only show when showTagline is true and not small */}
@@ -81,11 +85,11 @@ export function FamilyLogo({ showTagline = true, size = "md" }: FamilyLogoProps)
           <p
             className="mt-2 text-sm text-[var(--color-text-secondary)]"
             style={{
-              animation: "fadeIn 0.5s ease-out 1.5s forwards",
+              animation: "fadeIn 0.5s ease-out 0.8s forwards",
               opacity: 0,
             }}
           >
-            Gathering the family...
+            Bringing families closer
           </p>
 
           {/* Pulsing dots */}
@@ -95,7 +99,7 @@ export function FamilyLogo({ showTagline = true, size = "md" }: FamilyLogoProps)
                 key={i}
                 className="h-1.5 w-1.5 rounded-full bg-[var(--color-gold)]"
                 style={{
-                  animation: `pulse 1s ease-in-out ${1.5 + i * 0.15}s infinite`,
+                  animation: `pulse 1s ease-in-out ${1 + i * 0.15}s infinite`,
                   opacity: 0.4,
                 }}
               />
@@ -106,29 +110,17 @@ export function FamilyLogo({ showTagline = true, size = "md" }: FamilyLogoProps)
 
       {/* CSS Animations */}
       <style>{`
-        @keyframes growBranch {
-          to { width: 1.5rem; }
-        }
-        @keyframes growBranchSm {
-          to { width: 0.75rem; }
-        }
-        @keyframes growStick {
-          to { height: 2rem; }
-        }
-        @keyframes growStickSm {
-          to { height: 1rem; }
-        }
-        @keyframes popCircle {
+        @keyframes popIn {
           to { transform: scale(1); }
+        }
+        @keyframes growBranch {
+          to { width: 100%; }
+        }
+        @keyframes growTrunk {
+          to { height: ${isSmall ? "0.75rem" : "1.25rem"}; }
         }
         @keyframes fadeIn {
           to { opacity: 1; }
-        }
-        @keyframes letterReveal {
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
         @keyframes pulse {
           0%, 100% {

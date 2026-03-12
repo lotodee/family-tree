@@ -1,146 +1,71 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Users, Sparkles } from "lucide-react";
-import { WandIcon } from "@/components/icons";
-import { RopeBoard } from "@/components/ui/rope-board";
-import { AvatarUploadPrompt } from "@/components/ui/avatar-upload-prompt";
+import { Calendar, Users, Plus, PartyPopper } from "lucide-react";
 import { gsap, useGSAP } from "@/lib/gsap/config";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { COLORS } from "@/lib/config/design";
+import type { CelebrationCardData } from "./page";
 
 interface DashboardClientProps {
   avatarUrl: string | null;
   firstName: string;
   greeting: string;
-  generationLabel: string;
-  progress: number;
-  answered: number;
-  total: number;
-  remaining: number;
-  joined: number;
-  profileNodeId: string;
+  celebrations: CelebrationCardData[];
 }
 
-// Progress ring component with GSAP animation
-function ProgressRing({
-  progress,
-  size = 100,
-  strokeWidth = 8,
-  animate = false,
-}: {
-  progress: number;
-  size?: number;
-  strokeWidth?: number;
-  animate?: boolean;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const progressRef = useRef<SVGCircleElement>(null);
-  const percentRef = useRef<HTMLSpanElement>(null);
+// Role badge colors
+const roleBadgeStyles: Record<string, { bg: string; text: string }> = {
+  owner: { bg: COLORS.gold, text: COLORS.textPrimary },
+  admin: { bg: COLORS.burgundy, text: COLORS.white },
+  member: { bg: COLORS.goldLight, text: COLORS.textPrimary },
+  viewer: { bg: "#E5E5E5", text: COLORS.textSecondary },
+};
 
-  useGSAP(() => {
-    if (!animate || !progressRef.current || !percentRef.current) return;
+function formatEventDate(dateString: string | null): string {
+  if (!dateString) return "No date set";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-    // Animate the ring drawing
-    gsap.fromTo(
-      progressRef.current,
-      { strokeDashoffset: circumference },
-      {
-        strokeDashoffset: circumference - (progress / 100) * circumference,
-        duration: 1.5,
-        ease: "power2.out",
-        delay: 0.8,
-      }
-    );
-
-    // Animate the percentage counter
-    const obj = { val: 0 };
-    gsap.to(obj, {
-      val: progress,
-      duration: 1.5,
-      ease: "power2.out",
-      delay: 0.8,
-      onUpdate: () => {
-        if (percentRef.current) {
-          percentRef.current.textContent = `${Math.round(obj.val)}%`;
-        }
-      },
-    });
-  }, [animate, progress, circumference]);
-
+function RoleBadge({ role }: { role: string }) {
+  const styles = roleBadgeStyles[role] || roleBadgeStyles.viewer;
   return (
-    <div className="relative flex-shrink-0">
-      <svg width={size} height={size} className="rotate-[-90deg]">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--color-gold-light)"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          ref={progressRef}
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--color-gold)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={animate ? circumference : circumference - (progress / 100) * circumference}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span ref={percentRef} className="text-2xl font-bold text-burgundy">
-          {animate ? "0%" : `${progress}%`}
-        </span>
-      </div>
-    </div>
+    <span
+      className="px-2 py-0.5 rounded-full text-xs font-medium capitalize"
+      style={{ backgroundColor: styles.bg, color: styles.text }}
+    >
+      {role}
+    </span>
   );
 }
 
 export function DashboardClient({
-  avatarUrl,
   firstName,
   greeting,
-  generationLabel,
-  progress,
-  answered,
-  total,
-  remaining,
-  joined,
-  profileNodeId,
+  celebrations,
 }: DashboardClientProps) {
-  const [showUploadBoard, setShowUploadBoard] = useState(false);
-  const [hasAvatar, setHasAvatar] = useState(!!avatarUrl);
-  const [animationsReady, setAnimationsReady] = useState(false);
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [animationsReady, setAnimationsReady] = useState(false);
 
-  // Show the board after a short delay if no avatar
-  useEffect(() => {
-    if (!hasAvatar) {
-      const timer = setTimeout(() => setShowUploadBoard(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasAvatar]);
-
-  // Mark animations ready after mount
   useEffect(() => {
     setAnimationsReady(true);
   }, []);
 
-  // GSAP animations
+  // GSAP entrance animations
   useGSAP(
     () => {
       if (!animationsReady) return;
 
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-      // Hero text entrance
+      // Hero section entrance
       tl.from(".hero-greeting", {
         opacity: 0,
         y: 20,
@@ -155,44 +80,24 @@ export function DashboardClient({
           },
           "-=0.4"
         )
+        // Celebration cards stagger
         .from(
-          ".hero-label",
-          {
-            opacity: 0,
-            y: 15,
-            duration: 0.5,
-          },
-          "-=0.4"
-        )
-        // Progress card slide up
-        .from(
-          ".progress-card",
-          {
-            opacity: 0,
-            y: 60,
-            duration: 0.8,
-            ease: "power2.out",
-          },
-          "-=0.3"
-        )
-        // Quick actions stagger
-        .from(
-          ".action-card",
+          ".celebration-card",
           {
             opacity: 0,
             y: 40,
             scale: 0.95,
-            stagger: 0.15,
+            stagger: 0.12,
             duration: 0.6,
           },
-          "-=0.4"
+          "-=0.3"
         )
-        // Footer text
+        // Empty state or create button
         .from(
-          ".footer-text",
+          ".empty-state, .create-button",
           {
             opacity: 0,
-            y: 20,
+            y: 30,
             duration: 0.5,
           },
           "-=0.2"
@@ -201,159 +106,157 @@ export function DashboardClient({
     { scope: containerRef, dependencies: [animationsReady] }
   );
 
-  // Hover animations for cards
+  // Card hover animations
   const { contextSafe } = useGSAP({ scope: containerRef });
 
   const handleCardHover = contextSafe((e: React.MouseEvent, isEntering: boolean) => {
     gsap.to(e.currentTarget, {
-      scale: isEntering ? 1.03 : 1,
+      scale: isEntering ? 1.02 : 1,
       y: isEntering ? -4 : 0,
       boxShadow: isEntering
-        ? "0 12px 24px rgba(0,0,0,0.12)"
+        ? "0 12px 24px rgba(196,151,59,0.15)"
         : "0 1px 3px rgba(0,0,0,0.08)",
       duration: 0.3,
       ease: "power2.out",
+      overwrite: "auto",
     });
   });
 
-  const handleButtonHover = contextSafe((e: React.MouseEvent, isEntering: boolean) => {
-    gsap.to(e.currentTarget, {
-      scale: isEntering ? 1.02 : 1,
-      duration: 0.2,
-      ease: "power2.out",
-    });
-
-    // Animate the arrow
-    const arrow = e.currentTarget.querySelector(".button-arrow");
-    if (arrow) {
-      gsap.to(arrow, {
-        x: isEntering ? 4 : 0,
-        duration: 0.2,
-        ease: "power2.out",
-      });
-    }
-  });
-
-  const handleUploaded = () => {
-    setHasAvatar(true);
-    setShowUploadBoard(false);
-    router.refresh();
-  };
-
-  const handleDismiss = () => {
-    setShowUploadBoard(false);
-  };
+  const hasCelebrations = celebrations.length > 0;
 
   return (
-    <>
-      {/* Rope board for image upload */}
-      <RopeBoard isOpen={showUploadBoard} onDismiss={handleDismiss}>
-        <AvatarUploadPrompt onUploaded={handleUploaded} onDismiss={handleDismiss} />
-      </RopeBoard>
-
-      {/* Dashboard content */}
-      <div ref={containerRef} className="bg-cream pb-24 overflow-hidden">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-burgundy to-burgundy-light px-6 pb-16 pt-8 text-ivory">
-          <p className="hero-greeting text-sm font-medium text-gold-light">{greeting}</p>
-          <h1 className="hero-name mt-1 font-display text-3xl font-bold">{firstName}</h1>
-          <p className="hero-label mt-1 text-sm text-ivory/70">{generationLabel}</p>
-        </div>
-
-        {/* Progress Card - Overlapping Hero */}
-        <div className="-mt-10 px-4">
-          <div className="progress-card rounded-2xl bg-ivory p-6 shadow-lg">
-            <div className="flex items-center gap-6">
-              {/* Progress Ring */}
-              <ProgressRing progress={progress} size={100} strokeWidth={8} animate={animationsReady} />
-
-              {/* Progress Text */}
-              <div className="flex-1">
-                <h2 className="font-display text-lg font-semibold text-text-primary">Your Stories</h2>
-                <p className="mt-1 text-sm text-text-secondary">
-                  {answered} of {total} questions answered
-                </p>
-                {remaining > 0 ? (
-                  <p className="mt-2 text-xs text-gold">{remaining} more to complete your story</p>
-                ) : (
-                  <p className="mt-2 flex items-center gap-1 text-xs text-success">
-                    <Sparkles className="h-3 w-3" />
-                    All done! Thank you!
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            {remaining > 0 && (
-              <Link
-                href="/questions"
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-burgundy py-3.5 font-semibold text-ivory transition-all active:scale-[0.98]"
-                onMouseEnter={(e) => handleButtonHover(e, true)}
-                onMouseLeave={(e) => handleButtonHover(e, false)}
-              >
-                Continue Sharing
-                <ArrowRight className="button-arrow h-4 w-4" />
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-6 px-4">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
-            Explore
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Family Tree */}
-            <Link href="/tree" className="group">
-              <div
-                className="action-card rounded-xl border border-gold/20 bg-ivory p-4"
-                onMouseEnter={(e) => handleCardHover(e, true)}
-                onMouseLeave={(e) => handleCardHover(e, false)}
-              >
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gold-light">
-                  <Users className="h-5 w-5 text-burgundy" />
-                </div>
-                <h4 className="font-display font-semibold text-text-primary">Family Tree</h4>
-                <p className="mt-0.5 text-xs text-text-secondary">{joined} of 37 joined</p>
-              </div>
-            </Link>
-
-            {/* Your Profile */}
-            <Link href={`/profile/${profileNodeId}`} className="group">
-              <div
-                className="action-card rounded-xl border border-gold/20 bg-ivory p-4"
-                onMouseEnter={(e) => handleCardHover(e, true)}
-                onMouseLeave={(e) => handleCardHover(e, false)}
-              >
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gold-light">
-                  <span className="text-lg font-bold text-burgundy">{firstName.charAt(0)}</span>
-                </div>
-                <h4 className="font-display font-semibold text-text-primary">Your Profile</h4>
-                <p className="mt-0.5 text-xs text-text-secondary">View your page</p>
-              </div>
-            </Link>
-          </div>
-
-        </div>
-
-        {/* Encouragement */}
-        <div className="mt-8 px-4 text-center">
-          <p className="footer-text text-sm text-text-secondary">
-            Every story you share becomes part of our family&apos;s history
-          </p>
-        </div>
+    <div ref={containerRef} className="min-h-screen" style={{ backgroundColor: COLORS.cream }}>
+      {/* Hero Section */}
+      <div
+        className="px-6 pb-8 pt-8"
+        style={{
+          background: `linear-gradient(135deg, ${COLORS.burgundy} 0%, ${COLORS.burgundyLight} 100%)`,
+        }}
+      >
+        <p
+          className="hero-greeting text-sm font-medium"
+          style={{ color: COLORS.goldLight }}
+        >
+          {greeting}
+        </p>
+        <h1
+          className="hero-name mt-1 font-display text-3xl font-bold"
+          style={{ color: COLORS.ivory }}
+        >
+          {firstName}
+        </h1>
       </div>
 
-      {/* Floating AI Playground Button */}
-      <Link
-        href="/playground"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-burgundy to-burgundy-light shadow-lg shadow-burgundy/30 transition-transform hover:scale-110 active:scale-95"
-        title="AI Playground"
-      >
-        <WandIcon size={24} className="text-gold-light" />
-      </Link>
-    </>
+      {/* Content */}
+      <div className="px-4 py-6">
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="text-lg font-display font-semibold"
+            style={{ color: COLORS.textPrimary }}
+          >
+            Your Celebrations
+          </h2>
+          {hasCelebrations && (
+            <Link href="/create">
+              <Button size="sm" variant="secondary" className="create-button">
+                <Plus size={16} />
+                New
+              </Button>
+            </Link>
+          )}
+        </div>
+
+        {hasCelebrations ? (
+          /* Celebration Cards */
+          <div className="space-y-4">
+            {celebrations.map((celebration) => (
+              <Link
+                key={celebration.id}
+                href={`/c/${celebration.slug}`}
+                className="block"
+              >
+                <Card
+                  className="celebration-card cursor-pointer"
+                  onMouseEnter={(e) => handleCardHover(e, true)}
+                  onMouseLeave={(e) => handleCardHover(e, false)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3
+                          className="font-display font-semibold text-lg"
+                          style={{ color: COLORS.textPrimary }}
+                        >
+                          {celebration.name}
+                        </h3>
+                        <RoleBadge role={celebration.role} />
+                      </div>
+
+                      <div className="flex items-center gap-4 mt-2">
+                        <div
+                          className="flex items-center gap-1.5 text-sm"
+                          style={{ color: COLORS.textSecondary }}
+                        >
+                          <Calendar size={14} />
+                          {formatEventDate(celebration.eventDate)}
+                        </div>
+                        <div
+                          className="flex items-center gap-1.5 text-sm"
+                          style={{ color: COLORS.textSecondary }}
+                        >
+                          <Users size={14} />
+                          {celebration.memberCount} member
+                          {celebration.memberCount !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Optional cover image thumbnail */}
+                    {celebration.coverImageUrl && (
+                      <div
+                        className="w-16 h-16 rounded-lg bg-cover bg-center flex-shrink-0 ml-4"
+                        style={{
+                          backgroundImage: `url(${celebration.coverImageUrl})`,
+                        }}
+                      />
+                    )}
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="empty-state text-center py-12">
+            <div
+              className="w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4"
+              style={{ backgroundColor: COLORS.goldLight }}
+            >
+              <PartyPopper size={36} style={{ color: COLORS.burgundy }} />
+            </div>
+            <h3
+              className="font-display text-xl font-semibold mb-2"
+              style={{ color: COLORS.textPrimary }}
+            >
+              No celebrations yet
+            </h3>
+            <p
+              className="text-sm mb-6 max-w-xs mx-auto"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Create your first celebration to start building your family tree and
+              collecting memories.
+            </p>
+            <Link href="/create">
+              <Button size="lg">
+                <Plus size={20} />
+                Create Your First Celebration
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -62,51 +62,26 @@ export const getAllTreeNodesWithProfiles = cache(async () => {
 });
 
 /**
- * Cached version of getting user's answer count
- * If treeNodeId is provided, counts only answers where subject_id matches (self answers)
+ * Cached version of getting user's memberships with celebration data
  */
-export const getUserAnswerCount = cache(async (userId: string, treeNodeId?: string) => {
+export const getUserMemberships = cache(async (userId: string) => {
   const supabase = await createClient();
-  let query = supabase
-    .from("answers")
-    .select("*", { count: "exact", head: true })
-    .eq("respondent_id", userId)
-    .eq("is_confirmed", true);
-
-  if (treeNodeId) {
-    query = query.eq("subject_id", treeNodeId);
-  }
-
-  const { count, error } = await query;
-  return { count, error };
+  const { data: memberships, error } = await supabase
+    .from("memberships")
+    .select("*, celebration:celebrations(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return { memberships, error };
 });
 
 /**
- * Cached version of getting active questions count
+ * Cached version of getting member count for a celebration
  */
-export const getActiveQuestionsCount = cache(async (type?: "self" | "about_other") => {
-  const supabase = await createClient();
-  let query = supabase
-    .from("questions")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  if (type) {
-    query = query.eq("type", type);
-  }
-
-  const { count, error } = await query;
-  return { count, error };
-});
-
-/**
- * Cached version of getting claimed nodes count
- */
-export const getClaimedNodesCount = cache(async () => {
+export const getCelebrationMemberCount = cache(async (celebrationId: string) => {
   const supabase = await createClient();
   const { count, error } = await supabase
-    .from("family_tree_nodes")
+    .from("memberships")
     .select("*", { count: "exact", head: true })
-    .eq("is_claimed", true);
-  return { count, error };
+    .eq("celebration_id", celebrationId);
+  return { count: count || 0, error };
 });
