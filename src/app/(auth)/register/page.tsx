@@ -39,6 +39,7 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const redirectTo = searchParams.get("redirect");
+  const inviteCode = searchParams.get("code");
 
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -130,9 +131,24 @@ function RegisterForm() {
       <h1 className="mb-2 text-center font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-burgundy)]">
         Create your account
       </h1>
-      <p className="mb-8 text-center text-[var(--color-text-secondary)]">
+      <p className="mb-4 text-center text-[var(--color-text-secondary)]">
         Join to create or participate in celebrations
       </p>
+
+      {inviteCode && (
+        <div
+          className="mb-6 p-3 rounded-lg text-sm text-center"
+          style={{
+            backgroundColor: "var(--color-gold-light)",
+            color: "var(--color-text-primary)",
+            border: "1px solid var(--color-gold)",
+          }}
+        >
+          Create an account to join the celebration.
+          <br />
+          You'll be added automatically after signing up.
+        </div>
+      )}
 
       <div className="space-y-5">
         <Input
@@ -196,7 +212,11 @@ function RegisterForm() {
       <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
         Already have an account?{" "}
         <Link
-          href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
+          href={
+            redirectTo
+              ? `/login?redirect=${encodeURIComponent(redirectTo)}${inviteCode ? `&code=${inviteCode}` : ""}`
+              : "/login"
+          }
           className="font-medium text-[var(--color-burgundy)] underline underline-offset-2"
         >
           Log in here

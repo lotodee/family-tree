@@ -1,213 +1,243 @@
 "use client";
 
-import type { FamilyTreeNode } from "@/types";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { COLORS } from "@/lib/config/design";
+import { getRelationshipLabel } from "@/lib/utils/relationships";
 import { X } from "lucide-react";
+import type { FamilyTreeNode, FamilyRelationship, RelationshipType, Gender } from "@/types";
 
-interface NodeDetailProps {
+interface Connection {
+  relationship: FamilyRelationship;
+  relatedNode: FamilyTreeNode;
+}
+
+interface Props {
   node: FamilyTreeNode;
-  nodes: FamilyTreeNode[];
+  connections: Connection[];
+  isHonoree: boolean;
   canEdit: boolean;
-  onEdit: () => void;
+  onSelectNode: (id: string) => void;
+  onAddConnection: () => void;
+  onEdit: (data: Record<string, unknown>) => void;
   onRemove: () => void;
-  onAddChild: () => void;
-  onAddSpouse: () => void;
-  onClose: () => void;
 }
 
 export function NodeDetail({
   node,
-  nodes,
+  connections,
+  isHonoree,
   canEdit,
+  onSelectNode,
+  onAddConnection,
   onEdit,
   onRemove,
-  onAddChild,
-  onAddSpouse,
-  onClose,
-}: NodeDetailProps) {
-  // Look up relationships
-  const parent = nodes.find((n) => n.id === node.parent_node_id);
-  const spouse = nodes.find((n) => n.id === node.spouse_node_id);
-  const children = nodes.filter(
-    (n) => n.parent_node_id === node.id && n.node_type === "biological"
-  );
+}: Props) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(node.display_name);
+  const [editGender, setEditGender] = useState<Gender>(node.gender);
+  const [editDeceased, setEditDeceased] = useState(node.is_deceased);
 
-  // Generate initials for avatar placeholder
-  const initials = node.display_name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  const generationLabel = (() => {
-    switch (node.generation) {
-      case 0:
-        return "Root";
-      case 1:
-        return "Child";
-      case 2:
-        return "Grandchild";
-      case 3:
-        return "Great-Grandchild";
-      default:
-        return `Generation ${node.generation}`;
-    }
-  })();
+  const handleSave = () => {
+    onEdit({
+      displayName: editName,
+      gender: editGender,
+      isDeceased: editDeceased,
+    });
+    setIsEditing(false);
+  };
 
   const genderLabel =
-    node.gender === "male"
-      ? "Male"
-      : node.gender === "female"
-      ? "Female"
-      : "Unknown";
+    node.gender === "male" ? "Male" : node.gender === "female" ? "Female" : "Unknown";
+
+  // Group connections by type
+  const groupedConnections = connections.reduce((acc, conn) => {
+    const type = conn.relationship.relationship_type;
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(conn);
+    return acc;
+  }, {} as Record<string, Connection[]>);
 
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{
-        backgroundColor: COLORS.ivory,
-        border: `1px solid ${COLORS.goldLight}`,
-      }}
-    >
-      {/* Header with close button */}
+    <Card className="p-4">
+      {/* Header with close */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {/* Avatar placeholder */}
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center font-semibold"
-            style={{
-              backgroundColor: COLORS.goldLight,
-              color: COLORS.burgundy,
-            }}
-          >
-            {initials}
-          </div>
-          <div>
+        <div className="flex-1">
+          {isEditing ? (
+            <Input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="mb-2"
+              autoFocus
+            />
+          ) : (
             <h3
-              className="font-semibold"
-              style={{
-                fontFamily: "var(--font-display)",
-                color: COLORS.textPrimary,
-              }}
+              className="text-lg font-bold"
+              style={{ color: COLORS.textPrimary }}
             >
               {node.display_name}
-              {node.is_deceased && (
-                <span style={{ color: COLORS.textSecondary }}> †</span>
-              )}
+              {node.is_deceased && " †"}
             </h3>
-            {node.full_name && (
-              <p className="text-sm" style={{ color: COLORS.textSecondary }}>
-                {node.full_name}
-              </p>
+          )}
+
+          {/* Gender + Honoree badge */}
+          <div className="flex items-center gap-2 mt-1">
+            {isEditing ? (
+              <select
+                value={editGender}
+                onChange={(e) => setEditGender(e.target.value as Gender)}
+                className="text-sm px-2 py-1 rounded border"
+                style={{
+                  borderColor: COLORS.goldLight,
+                  backgroundColor: COLORS.ivory,
+                }}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            ) : (
+              <span
+                className="text-sm"
+                style={{ color: COLORS.textSecondary }}
+              >
+                {genderLabel}
+              </span>
+            )}
+
+            {isHonoree && (
+              <span
+                className="text-xs px-2 py-0.5 rounded"
+                style={{
+                  backgroundColor: COLORS.gold,
+                  color: "white",
+                }}
+              >
+                ★ Being Celebrated
+              </span>
             )}
           </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-full transition-colors hover:bg-black/5"
-        >
-          <X size={18} style={{ color: COLORS.textSecondary }} />
-        </button>
-      </div>
 
-      {/* Info rows */}
-      <div className="space-y-2 mb-4">
-        <InfoRow label="Generation" value={`${node.generation} (${generationLabel})`} />
-        <InfoRow label="Gender" value={genderLabel} />
-        {node.branch && <InfoRow label="Branch" value={node.branch} />}
-        <InfoRow
-          label="Status"
-          value={node.is_deceased ? "† Deceased" : "Active"}
-        />
-        <InfoRow
-          label="Type"
-          value={node.node_type === "spouse" ? "Spouse" : "Biological"}
-        />
-        <InfoRow
-          label="Claimed"
-          value={node.is_claimed ? "Yes" : "No"}
-        />
-      </div>
-
-      {/* Relationships */}
-      <div
-        className="border-t pt-3 mb-4 space-y-2"
-        style={{ borderColor: COLORS.goldLight }}
-      >
-        {parent && (
-          <InfoRow label="Parent" value={parent.display_name} />
-        )}
-        {spouse && (
-          <InfoRow label="Spouse" value={spouse.display_name} />
-        )}
-        {children.length > 0 && (
-          <InfoRow
-            label="Children"
-            value={children.map((c) => c.display_name).join(", ")}
-          />
-        )}
-        {!parent && !spouse && children.length === 0 && (
-          <p className="text-sm" style={{ color: COLORS.textSecondary }}>
-            No relationships yet
-          </p>
-        )}
-      </div>
-
-      {/* Actions */}
-      {canEdit && (
-        <div
-          className="border-t pt-3 space-y-2"
-          style={{ borderColor: COLORS.goldLight }}
-        >
-          <Button
-            variant="secondary"
-            onClick={onAddChild}
-            fullWidth
-            size="sm"
-          >
-            + Add Child
-          </Button>
-          {!spouse && (
-            <Button
-              variant="secondary"
-              onClick={onAddSpouse}
-              fullWidth
-              size="sm"
-            >
-              + Add Spouse
-            </Button>
+          {/* Deceased checkbox in edit mode */}
+          {isEditing && (
+            <label className="flex items-center gap-2 mt-2 text-sm">
+              <input
+                type="checkbox"
+                checked={editDeceased}
+                onChange={(e) => setEditDeceased(e.target.checked)}
+              />
+              <span style={{ color: COLORS.textSecondary }}>Deceased</span>
+            </label>
           )}
-          <Button
-            variant="secondary"
-            onClick={onEdit}
-            fullWidth
-            size="sm"
+        </div>
+
+        {!isEditing && (
+          <button
+            onClick={() => onSelectNode(node.id)}
+            className="p-1 rounded hover:bg-gray-100"
+            title="Close"
           >
-            Edit
+            <X size={18} style={{ color: COLORS.textSecondary }} />
+          </button>
+        )}
+      </div>
+
+      {/* Edit mode save/cancel */}
+      {isEditing && (
+        <div className="flex gap-2 mb-4">
+          <Button size="sm" onClick={handleSave}>
+            Save
           </Button>
           <Button
-            variant="danger"
-            onClick={onRemove}
-            fullWidth
             size="sm"
+            variant="secondary"
+            onClick={() => {
+              setIsEditing(false);
+              setEditName(node.display_name);
+              setEditGender(node.gender);
+              setEditDeceased(node.is_deceased);
+            }}
           >
-            Remove
+            Cancel
           </Button>
         </div>
       )}
-    </div>
-  );
-}
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span style={{ color: COLORS.textSecondary }}>{label}</span>
-      <span className="font-medium" style={{ color: COLORS.textPrimary }}>
-        {value}
-      </span>
-    </div>
+      {/* Connections */}
+      {!isEditing && connections.length > 0 && (
+        <div className="mb-4">
+          <p
+            className="text-xs font-semibold uppercase tracking-wide mb-2"
+            style={{ color: COLORS.textSecondary }}
+          >
+            Connections
+          </p>
+          <div className="space-y-1">
+            {Object.entries(groupedConnections).map(([type, conns]) => (
+              <div key={type}>
+                {conns.map((conn) => (
+                  <button
+                    key={conn.relationship.id}
+                    onClick={() => onSelectNode(conn.relatedNode.id)}
+                    className="flex items-center gap-2 w-full text-left py-1 px-2 rounded hover:bg-[var(--color-ivory)] transition-colors"
+                  >
+                    <span
+                      className="text-xs"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      {getRelationshipLabel(type as RelationshipType)}:
+                    </span>
+                    <span
+                      className="text-sm"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      {conn.relatedNode.display_name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No connections message */}
+      {!isEditing && connections.length === 0 && (
+        <p
+          className="text-sm mb-4"
+          style={{ color: COLORS.textSecondary }}
+        >
+          No connections yet
+        </p>
+      )}
+
+      {/* Actions */}
+      {!isEditing && canEdit && (
+        <div
+          className="pt-4 border-t space-y-2"
+          style={{ borderColor: COLORS.goldLight }}
+        >
+          <Button size="sm" fullWidth onClick={onAddConnection}>
+            + Add Connection
+          </Button>
+          <Button size="sm" variant="secondary" fullWidth onClick={() => setIsEditing(true)}>
+            Edit
+          </Button>
+          {!isHonoree && (
+            <Button
+              size="sm"
+              variant="secondary"
+              fullWidth
+              onClick={onRemove}
+              className="!text-red-600 hover:!bg-red-50"
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

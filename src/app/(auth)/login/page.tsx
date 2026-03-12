@@ -23,6 +23,7 @@ function LoginForm() {
   const supabase = createClient();
   const emailRef = useRef<HTMLInputElement>(null);
   const redirectTo = searchParams.get("redirect");
+  const inviteCode = searchParams.get("code");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,9 +64,24 @@ function LoginForm() {
       <h1 className="mb-2 text-center font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-burgundy)]">
         Welcome back
       </h1>
-      <p className="mb-8 text-center text-[var(--color-text-secondary)]">
+      <p className="mb-4 text-center text-[var(--color-text-secondary)]">
         Enter your email and password to continue
       </p>
+
+      {inviteCode && (
+        <div
+          className="mb-6 p-3 rounded-lg text-sm text-center"
+          style={{
+            backgroundColor: "var(--color-gold-light)",
+            color: "var(--color-text-primary)",
+            border: "1px solid var(--color-gold)",
+          }}
+        >
+          Sign in to join the celebration.
+          <br />
+          You'll be added automatically after logging in.
+        </div>
+      )}
 
       <div className="space-y-5" onKeyDown={handleKeyDown}>
         <Input
@@ -114,7 +130,11 @@ function LoginForm() {
       <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
         Don&apos;t have an account?{" "}
         <Link
-          href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"}
+          href={
+            redirectTo
+              ? `/register?redirect=${encodeURIComponent(redirectTo)}${inviteCode ? `&code=${inviteCode}` : ""}`
+              : "/register"
+          }
           className="font-medium text-[var(--color-burgundy)] underline underline-offset-2"
         >
           Sign up here

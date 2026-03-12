@@ -1,288 +1,208 @@
 "use client";
 
-import { useRef } from "react";
-import { gsap, useGSAP } from "@/lib/gsap/config";
-import type { FamilyTreeNode } from "@/types";
+import { useMemo } from "react";
 import { COLORS } from "@/lib/config/design";
+import type { FamilyTreeNode, FamilyRelationship } from "@/types";
 
-interface TreePreviewProps {
-  nodes: FamilyTreeNode[];
-  selectedNodeId: string | null;
-  onSelectNode: (nodeId: string) => void;
-  onAddChild?: (parentId: string) => void;
-  onAddSpouse?: (nodeId: string) => void;
-}
-
-interface TreeDisplayNode {
+interface DisplayNode {
   node: FamilyTreeNode;
   spouse: FamilyTreeNode | null;
-  children: TreeDisplayNode[];
-  depth: number;
+  children: DisplayNode[];
 }
 
-function buildDisplayTree(nodes: FamilyTreeNode[]): TreeDisplayNode[] {
-  // Find root nodes (generation 0, biological)
-  const roots = nodes.filter(
-    (n) => n.generation === 0 && n.node_type === "biological"
-  );
-
-  function buildNode(node: FamilyTreeNode, depth: number): TreeDisplayNode {
-    const spouse = node.spouse_node_id
-      ? nodes.find((n) => n.id === node.spouse_node_id) || null
-      : null;
-
-    const children = nodes
-      .filter(
-        (n) => n.parent_node_id === node.id && n.node_type === "biological"
-      )
-      .sort((a, b) => a.display_name.localeCompare(b.display_name))
-      .map((child) => buildNode(child, depth + 1));
-
-    return { node, spouse, children, depth };
-  }
-
-  return roots.map((root) => buildNode(root, 0));
-}
-
-function TreeRow({
-  displayNode,
-  isLast,
-  selectedNodeId,
-  onSelectNode,
-  onAddChild,
-  onAddSpouse,
-}: {
-  displayNode: TreeDisplayNode;
-  isLast: boolean;
+interface Props {
+  nodes: FamilyTreeNode[];
+  relationships: FamilyRelationship[];
+  honoreeNodeId: string | null;
   selectedNodeId: string | null;
-  onSelectNode: (nodeId: string) => void;
-  onAddChild?: (parentId: string) => void;
-  onAddSpouse?: (nodeId: string) => void;
-}) {
-  const { node, spouse, children, depth } = displayNode;
-  const isSelected = selectedNodeId === node.id;
-  const isSpouseSelected = spouse && selectedNodeId === spouse.id;
-
-  return (
-    <>
-      <div
-        className="tree-row group flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors"
-        style={{
-          paddingLeft: `${depth * 24 + 8}px`,
-          backgroundColor: isSelected
-            ? `${COLORS.goldLight}40`
-            : "transparent",
-          borderLeft: isSelected ? `3px solid ${COLORS.gold}` : "3px solid transparent",
-        }}
-        onClick={() => onSelectNode(node.id)}
-      >
-        {/* Tree connector */}
-        {depth > 0 && (
-          <span
-            className="font-mono text-sm"
-            style={{ color: COLORS.textSecondary }}
-          >
-            {isLast ? "└──" : "├──"}
-          </span>
-        )}
-
-        {/* Person name */}
-        <span
-          className="font-medium"
-          style={{
-            fontFamily: "var(--font-body)",
-            color: COLORS.textPrimary,
-          }}
-        >
-          {node.display_name}
-          {node.is_deceased && (
-            <span style={{ color: COLORS.textSecondary }}> †</span>
-          )}
-        </span>
-
-        {/* Spouse */}
-        {spouse && (
-          <>
-            <span style={{ color: COLORS.textSecondary }}>──</span>
-            <span
-              className="cursor-pointer font-medium transition-colors hover:underline"
-              style={{
-                fontFamily: "var(--font-body)",
-                color: isSpouseSelected ? COLORS.gold : COLORS.textPrimary,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectNode(spouse.id);
-              }}
-            >
-              {spouse.display_name}
-              {spouse.is_deceased && (
-                <span style={{ color: COLORS.textSecondary }}> †</span>
-              )}
-            </span>
-          </>
-        )}
-
-        {/* Action buttons on hover */}
-        <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {onAddChild && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddChild(node.id);
-              }}
-              className="text-xs px-2 py-0.5 rounded transition-colors"
-              style={{
-                backgroundColor: `${COLORS.gold}20`,
-                color: COLORS.gold,
-              }}
-            >
-              + child
-            </button>
-          )}
-          {onAddSpouse && !spouse && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddSpouse(node.id);
-              }}
-              className="text-xs px-2 py-0.5 rounded transition-colors"
-              style={{
-                backgroundColor: `${COLORS.gold}20`,
-                color: COLORS.gold,
-              }}
-            >
-              + spouse
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Render children */}
-      {children.map((child, index) => (
-        <TreeRow
-          key={child.node.id}
-          displayNode={child}
-          isLast={index === children.length - 1}
-          selectedNodeId={selectedNodeId}
-          onSelectNode={onSelectNode}
-          onAddChild={onAddChild}
-          onAddSpouse={onAddSpouse}
-        />
-      ))}
-    </>
-  );
+  onSelectNode: (id: string) => void;
 }
 
 export function TreePreview({
   nodes,
+  relationships,
+  honoreeNodeId,
   selectedNodeId,
   onSelectNode,
-  onAddChild,
-  onAddSpouse,
-}: TreePreviewProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const prevNodeCount = useRef(nodes.length);
+}: Props) {
+  // Build tree structure from relationships
+  const tree = useMemo(() => {
+    if (!honoreeNodeId || nodes.length === 0) return null;
 
-  // Animate new nodes
-  useGSAP(
-    () => {
-      if (nodes.length > prevNodeCount.current) {
-        gsap.from(".tree-row:last-child", {
-          opacity: 0,
-          x: -10,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
-      prevNodeCount.current = nodes.length;
-    },
-    { scope: containerRef, dependencies: [nodes.length] }
-  );
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const visited = new Set<string>();
 
-  const displayTree = buildDisplayTree(nodes);
+    // Get nodes related to a given node by specific relationship types
+    function getRelated(nodeId: string, types: string[]): FamilyTreeNode[] {
+      return relationships
+        .filter(
+          (r) => r.from_node_id === nodeId && types.includes(r.relationship_type)
+        )
+        .map((r) => nodeMap.get(r.to_node_id))
+        .filter(
+          (n): n is FamilyTreeNode => n !== undefined && !visited.has(n.id)
+        );
+    }
 
-  // Handle orphan nodes (nodes with no parent that aren't generation 0)
-  const orphanNodes = nodes.filter(
-    (n) =>
-      n.node_type === "biological" &&
-      n.generation > 0 &&
-      !n.parent_node_id &&
-      !displayTree.some((root) => {
-        const findNode = (dn: TreeDisplayNode): boolean =>
-          dn.node.id === n.id || dn.children.some(findNode);
-        return findNode(root);
-      })
-  );
+    function build(nodeId: string): DisplayNode | null {
+      if (visited.has(nodeId)) return null;
+      const node = nodeMap.get(nodeId);
+      if (!node) return null;
+
+      visited.add(nodeId);
+
+      // Find spouse
+      const spouses = getRelated(nodeId, ["wife", "husband"]);
+      const spouse = spouses[0] || null;
+      if (spouse) visited.add(spouse.id);
+
+      // Find children (sons and daughters of this node OR the spouse)
+      const myChildren = getRelated(nodeId, ["son", "daughter"]);
+      const spouseChildren = spouse
+        ? getRelated(spouse.id, ["son", "daughter"])
+        : [];
+
+      // Deduplicate children
+      const childMap = new Map<string, FamilyTreeNode>();
+      [...myChildren, ...spouseChildren].forEach((c) => childMap.set(c.id, c));
+
+      // Also find parents and siblings that haven't been visited
+      const parents = getRelated(nodeId, ["father", "mother"]);
+      const siblings = getRelated(nodeId, ["brother", "sister"]);
+
+      // Build children recursively
+      const childNodes = Array.from(childMap.values())
+        .map((c) => build(c.id))
+        .filter((n): n is DisplayNode => n !== null);
+
+      // Build parent nodes (going UP from the honoree)
+      const parentNodes = parents
+        .map((p) => build(p.id))
+        .filter((n): n is DisplayNode => n !== null);
+
+      // Build sibling nodes
+      const siblingNodes = siblings
+        .map((s) => build(s.id))
+        .filter((n): n is DisplayNode => n !== null);
+
+      // For the tree preview, combine everything as branches
+      const allBranches = [...parentNodes, ...childNodes, ...siblingNodes];
+
+      return { node, spouse, children: allBranches };
+    }
+
+    return build(honoreeNodeId);
+  }, [nodes, relationships, honoreeNodeId]);
+
+  // Render a node row
+  function renderNode(
+    displayNode: DisplayNode,
+    depth: number = 0,
+    isLast: boolean = true
+  ): React.ReactNode {
+    const { node, spouse, children } = displayNode;
+    const isSelected = node.id === selectedNodeId;
+    const isHonoree = node.id === honoreeNodeId;
+    const isSpouseSelected = spouse?.id === selectedNodeId;
+
+    // Indent prefix
+    const prefix = depth === 0 ? "" : isLast ? "└── " : "├── ";
+    const indent = "    ".repeat(Math.max(0, depth - 1)) + (depth > 0 ? "│   " : "");
+
+    return (
+      <div key={node.id}>
+        {/* Node row */}
+        <div
+          className={`flex items-center py-1.5 px-2 rounded cursor-pointer transition-colors ${
+            isSelected ? "bg-[var(--color-gold-light)]" : "hover:bg-[var(--color-ivory)]"
+          }`}
+          style={{
+            borderLeft: isHonoree ? `3px solid ${COLORS.gold}` : undefined,
+            paddingLeft: isHonoree ? "calc(0.5rem - 3px)" : undefined,
+          }}
+        >
+          <span
+            className="text-sm font-mono mr-2"
+            style={{ color: COLORS.textSecondary }}
+          >
+            {depth > 0 && indent}
+            {prefix}
+          </span>
+
+          {/* Main person */}
+          <button
+            onClick={() => onSelectNode(node.id)}
+            className={`text-sm font-medium ${
+              isSelected ? "font-semibold" : ""
+            }`}
+            style={{ color: COLORS.textPrimary }}
+          >
+            {node.display_name}
+            {node.is_deceased && " †"}
+          </button>
+
+          {/* Spouse */}
+          {spouse && (
+            <>
+              <span
+                className="mx-2 text-sm"
+                style={{ color: COLORS.textSecondary }}
+              >
+                ──
+              </span>
+              <button
+                onClick={() => onSelectNode(spouse.id)}
+                className={`text-sm ${isSpouseSelected ? "font-semibold" : ""}`}
+                style={{ color: COLORS.textPrimary }}
+              >
+                {spouse.display_name}
+                {spouse.is_deceased && " †"}
+              </button>
+            </>
+          )}
+
+          {/* Honoree badge */}
+          {isHonoree && (
+            <span
+              className="ml-2 text-xs px-2 py-0.5 rounded"
+              style={{
+                backgroundColor: COLORS.gold,
+                color: "white",
+              }}
+            >
+              ★
+            </span>
+          )}
+        </div>
+
+        {/* Children */}
+        {children.map((child, idx) =>
+          renderNode(child, depth + 1, idx === children.length - 1)
+        )}
+      </div>
+    );
+  }
+
+  if (!tree) {
+    return (
+      <div
+        className="text-center py-8"
+        style={{ color: COLORS.textSecondary }}
+      >
+        No family members yet
+      </div>
+    );
+  }
 
   return (
     <div
-      ref={containerRef}
-      className="rounded-lg p-4"
+      className="p-4 rounded-lg border"
       style={{
         backgroundColor: COLORS.ivory,
-        border: `1px solid ${COLORS.goldLight}`,
+        borderColor: COLORS.goldLight,
       }}
     >
-      {displayTree.length === 0 && orphanNodes.length === 0 && (
-        <p
-          className="text-center py-8 text-sm"
-          style={{ color: COLORS.textSecondary }}
-        >
-          No family members yet
-        </p>
-      )}
-
-      {displayTree.map((rootNode, index) => (
-        <TreeRow
-          key={rootNode.node.id}
-          displayNode={rootNode}
-          isLast={index === displayTree.length - 1}
-          selectedNodeId={selectedNodeId}
-          onSelectNode={onSelectNode}
-          onAddChild={onAddChild}
-          onAddSpouse={onAddSpouse}
-        />
-      ))}
-
-      {/* Show orphan nodes separately */}
-      {orphanNodes.length > 0 && (
-        <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.goldLight }}>
-          <p className="text-xs mb-2" style={{ color: COLORS.textSecondary }}>
-            Unlinked members:
-          </p>
-          {orphanNodes.map((node) => (
-            <div
-              key={node.id}
-              className="tree-row flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors"
-              style={{
-                backgroundColor:
-                  selectedNodeId === node.id
-                    ? `${COLORS.goldLight}40`
-                    : "transparent",
-                borderLeft:
-                  selectedNodeId === node.id
-                    ? `3px solid ${COLORS.gold}`
-                    : "3px solid transparent",
-              }}
-              onClick={() => onSelectNode(node.id)}
-            >
-              <span
-                className="font-medium"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  color: COLORS.textPrimary,
-                }}
-              >
-                {node.display_name}
-                {node.is_deceased && (
-                  <span style={{ color: COLORS.textSecondary }}> †</span>
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {renderNode(tree)}
     </div>
   );
 }

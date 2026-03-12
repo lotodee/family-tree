@@ -12,12 +12,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const celebrationId = searchParams.get("celebrationId");
-
+    const celebrationId = new URL(request.url).searchParams.get(
+      "celebrationId"
+    );
     if (!celebrationId) {
       return NextResponse.json(
-        { error: "celebrationId is required" },
+        { error: "celebrationId required" },
         { status: 400 }
       );
     }
@@ -31,33 +31,30 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!membership) {
-      return NextResponse.json(
-        { error: "Not a member of this celebration" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
-    // Fetch all nodes for this celebration
-    const { data: nodes, error } = await supabaseAdmin
-      .from("family_tree_nodes")
-      .select("*")
-      .eq("celebration_id", celebrationId)
-      .order("generation", { ascending: true })
-      .order("display_name", { ascending: true });
+    // Fetch nodes and relationships in parallel
+    const [nodesRes, relsRes] = await Promise.all([
+      supabaseAdmin
+        .from("family_tree_nodes")
+        .select("*")
+        .eq("celebration_id", celebrationId)
+        .order("created_at"),
+      supabaseAdmin
+        .from("family_relationships")
+        .select("*")
+        .eq("celebration_id", celebrationId)
+        .order("created_at"),
+    ]);
 
-    if (error) {
-      return NextResponse.json(
-        { error: "Failed to fetch tree" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ nodes: nodes || [] });
-  } catch {
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      nodes: nodesRes.data || [],
+      relationships: relsRes.data || [],
+    });
+  } catch (error) {
+    console.error("GET /api/tree:", error);
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
 
@@ -71,89 +68,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const {
-      celebrationId,
-      displayName,
-      fullName,
-      gender,
-      generation,
-      parentNodeId,
-      spouseNodeId,
-      branch,
-      nodeType,
-      isDeceased,
-    } = body;
+    const { celebrationId, displayName, gender } = await request.json();
 
-    // Validate required fields
-    if (
-      !celebrationId ||
-      !displayName ||
-      generation === undefined ||
-      generation === null
-    ) {
+    if (!celebrationId || !displayName?.trim()) {
       return NextResponse.json(
-        { error: "celebrationId, displayName, and generation are required" },
+        { error: "celebrationId and displayName required" },
         { status: 400 }
       );
     }
 
-    // Verify membership with can_add_to_tree permission
     const { data: membership } = await supabase
       .from("memberships")
-      .select("id, can_add_to_tree")
+      .select("can_add_to_tree")
       .eq("user_id", user.id)
       .eq("celebration_id", celebrationId)
       .single();
 
-    if (!membership) {
-      return NextResponse.json({ error: "Not a member" }, { status: 403 });
-    }
-    if (!membership.can_add_to_tree) {
-      return NextResponse.json(
-        { error: "You don't have permission to edit the tree" },
-        { status: 403 }
-      );
+    if (!membership?.can_add_to_tree) {
+      return NextResponse.json({ error: "No permission" }, { status: 403 });
     }
 
-    // Create the node
     const { data: node, error } = await supabaseAdmin
       .from("family_tree_nodes")
       .insert({
         celebration_id: celebrationId,
         display_name: displayName.trim(),
-        full_name: fullName?.trim() || null,
+        full_name: displayName.trim(),
         gender: gender || "unknown",
-        generation,
-        parent_node_id: parentNodeId || null,
-        spouse_node_id: spouseNodeId || null,
-        branch: branch || null,
-        node_type: nodeType || "biological",
-        is_deceased: isDeceased || false,
+        generation: 0,
+        node_type: "biological",
       })
       .select()
       .single();
 
     if (error) {
+      console.error("Create node error:", error);
       return NextResponse.json(
-        { error: "Failed to add family member" },
+        { error: "Failed to add person" },
         { status: 500 }
       );
     }
 
-    // If this is a spouse, link the partner back to this node (bidirectional)
-    if (spouseNodeId) {
-      await supabaseAdmin
-        .from("family_tree_nodes")
-        .update({ spouse_node_id: node.id })
-        .eq("id", spouseNodeId);
-    }
-
     return NextResponse.json({ node });
-  } catch {
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("POST /api/tree:", error);
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
