@@ -6,6 +6,7 @@ import {
   resolveParentChild,
   resolveSpouse,
 } from "@/lib/utils/relationships";
+import { inferRelationships } from "@/lib/utils/relationship-inference";
 import type { RelationshipType, Gender } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -206,6 +207,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Run inference engine — auto-creates transitive relationships
+    await inferRelationships(celebrationId);
+
     // Return the full updated state
     const [updatedNodes, updatedRels] = await Promise.all([
       supabaseAdmin
@@ -323,8 +327,11 @@ export async function DELETE(request: NextRequest) {
       ]);
     }
 
-    // Return updated state
+    // Re-run inference to rebuild transitive relationships based on remaining explicit ones
     const cId = rel.celebration_id;
+    await inferRelationships(cId);
+
+    // Return updated state
     const [updatedNodes, updatedRels] = await Promise.all([
       supabaseAdmin
         .from("family_tree_nodes")
