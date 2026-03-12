@@ -1,3 +1,5 @@
+import { TreeClient } from "./tree-client";
+
 export default function TreePage() {
-  return <div className="p-8">Family Tree - Coming in Sprint 6</div>;
+  return <TreeClient />;
 }
