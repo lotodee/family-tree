@@ -66,9 +66,12 @@ export function TreePreview({
       const childMap = new Map<string, FamilyTreeNode>();
       [...myChildren, ...spouseChildren].forEach((c) => childMap.set(c.id, c));
 
-      // Also find parents and siblings that haven't been visited
+      // Also find parents, siblings, and extended family
       const parents = getRelated(nodeId, ["father", "mother"]);
       const siblings = getRelated(nodeId, ["brother", "sister"]);
+      const unclesAunts = getRelated(nodeId, ["uncle", "aunt"]);
+      const nephewsNieces = getRelated(nodeId, ["nephew", "niece"]);
+      const cousins = getRelated(nodeId, ["cousin"]);
 
       // Build children recursively
       const childNodes = Array.from(childMap.values())
@@ -85,8 +88,28 @@ export function TreePreview({
         .map((s) => build(s.id))
         .filter((n): n is DisplayNode => n !== null);
 
+      // Build extended family nodes
+      const uncleAuntNodes = unclesAunts
+        .map((u) => build(u.id))
+        .filter((n): n is DisplayNode => n !== null);
+
+      const nephewNieceNodes = nephewsNieces
+        .map((n) => build(n.id))
+        .filter((n): n is DisplayNode => n !== null);
+
+      const cousinNodes = cousins
+        .map((c) => build(c.id))
+        .filter((n): n is DisplayNode => n !== null);
+
       // For the tree preview, combine everything as branches
-      const allBranches = [...parentNodes, ...childNodes, ...siblingNodes];
+      const allBranches = [
+        ...parentNodes,
+        ...uncleAuntNodes,
+        ...siblingNodes,
+        ...cousinNodes,
+        ...childNodes,
+        ...nephewNieceNodes,
+      ];
 
       return { node, spouse, children: allBranches };
     }

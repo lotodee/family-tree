@@ -92,19 +92,63 @@ export function computeTreeLayout(
     const childMap = new Map<string, FamilyTreeNode>();
     [...myChildren, ...spouseChildren].forEach((c) => childMap.set(c.id, c));
 
-    const children = Array.from(childMap.values())
+    // Find siblings (brother/sister) - they appear at the SAME generation level
+    const siblings = getRelated(nodeId, ["brother", "sister"]);
+
+    // Find parents (father/mother) - they appear one generation UP (gen - 1)
+    const parents = getRelated(nodeId, ["father", "mother"]);
+
+    // Find extended family
+    const unclesAunts = getRelated(nodeId, ["uncle", "aunt"]); // same level as parents
+    const nephewsNieces = getRelated(nodeId, ["nephew", "niece"]); // same level as children
+    const cousins = getRelated(nodeId, ["cousin"]); // same level as current
+
+    // Build child units (gen + 1)
+    const childUnits = Array.from(childMap.values())
       .filter((c) => !visited.has(c.id))
       .map((c) => buildUnit(c.id, gen + 1))
       .filter((u): u is FamilyUnit => u !== null);
 
-    // Also find parents going upward (only from the honoree)
-    // Parents are handled by making the honoree the root and only going downward
-    // If the honoree has parents in the data, they appear as a special "ancestors" branch
-    // For now, the tree grows DOWNWARD from the honoree through children only.
-    // Parents, siblings, uncles etc. from the manage page relationships are visible
-    // in the manage page builder view but the visual tree focuses on the descendant hierarchy.
+    // Build sibling units (same gen) - siblings are essentially peers
+    const siblingUnits = siblings
+      .filter((s) => !visited.has(s.id))
+      .map((s) => buildUnit(s.id, gen))
+      .filter((u): u is FamilyUnit => u !== null);
 
-    return { person: node, spouse, children, computedGen: gen };
+    // Build parent units (gen - 1) - parents go "up" but we show them as branches
+    const parentUnits = parents
+      .filter((p) => !visited.has(p.id))
+      .map((p) => buildUnit(p.id, gen - 1))
+      .filter((u): u is FamilyUnit => u !== null);
+
+    // Build extended family units
+    const uncleAuntUnits = unclesAunts
+      .filter((u) => !visited.has(u.id))
+      .map((u) => buildUnit(u.id, gen - 1))
+      .filter((u): u is FamilyUnit => u !== null);
+
+    const nephewNieceUnits = nephewsNieces
+      .filter((n) => !visited.has(n.id))
+      .map((n) => buildUnit(n.id, gen + 1))
+      .filter((u): u is FamilyUnit => u !== null);
+
+    const cousinUnits = cousins
+      .filter((c) => !visited.has(c.id))
+      .map((c) => buildUnit(c.id, gen))
+      .filter((u): u is FamilyUnit => u !== null);
+
+    // Combine all branches - for visual display, they all appear as "children" branches
+    // The generation number differentiates their visual position
+    const allBranches = [
+      ...parentUnits,
+      ...uncleAuntUnits,
+      ...siblingUnits,
+      ...cousinUnits,
+      ...childUnits,
+      ...nephewNieceUnits,
+    ];
+
+    return { person: node, spouse, children: allBranches, computedGen: gen };
   }
 
   const root = buildUnit(honoreeNodeId, 0);
