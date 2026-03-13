@@ -18,8 +18,10 @@ export function ManageClient() {
   const [nodes, setNodes] = useState<FamilyTreeNode[]>([]);
   const [relationships, setRelationships] = useState<FamilyRelationship[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
 
   const canEdit = membership.can_add_to_tree;
+  const isOwner = membership.role === "owner";
 
   const fetchTree = useCallback(async () => {
     try {
@@ -47,6 +49,37 @@ export function ManageClient() {
     },
     []
   );
+
+  // Reset all connections (owner only)
+  const handleResetConnections = useCallback(async () => {
+    const confirmed = window.confirm(
+      "This will delete ALL connections and reset the tree. You'll need to re-add connections manually. Are you sure?"
+    );
+    if (!confirmed) return;
+
+    setIsResetting(true);
+    try {
+      const res = await fetch("/api/relationships/cleanup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ celebrationId: celebration.id }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to reset");
+      }
+
+      const data = await res.json();
+      setNodes(data.nodes);
+      setRelationships(data.relationships);
+      toast.success("All connections reset. Start re-adding connections.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reset connections");
+    } finally {
+      setIsResetting(false);
+    }
+  }, [celebration.id]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.cream }}>
@@ -122,12 +155,51 @@ export function ManageClient() {
         {tab === "invitations" && <InviteTab nodes={nodes} />}
 
         {tab === "settings" && (
-          <p
-            className="text-center py-16"
-            style={{ color: COLORS.textSecondary }}
-          >
-            Celebration Settings — Coming in Sprint 8
-          </p>
+          <div className="max-w-md mx-auto py-8">
+            <p
+              className="text-center mb-8"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Celebration Settings — Coming in Sprint 8
+            </p>
+
+            {isOwner && (
+              <div
+                className="p-4 rounded-lg border"
+                style={{
+                  borderColor: COLORS.error,
+                  backgroundColor: `${COLORS.error}10`,
+                }}
+              >
+                <h3
+                  className="font-semibold mb-2"
+                  style={{ color: COLORS.error }}
+                >
+                  Danger Zone
+                </h3>
+                <p
+                  className="text-sm mb-4"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  Reset all family connections. This deletes all relationships
+                  but keeps the people. You will need to re-add connections
+                  manually.
+                </p>
+                <button
+                  onClick={handleResetConnections}
+                  disabled={isResetting}
+                  className="px-4 py-2 text-sm font-medium rounded"
+                  style={{
+                    backgroundColor: COLORS.error,
+                    color: "white",
+                    opacity: isResetting ? 0.6 : 1,
+                  }}
+                >
+                  {isResetting ? "Resetting..." : "Reset All Connections"}
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -114,22 +114,22 @@ export async function inferRelationships(celebrationId: string): Promise<void> {
     // If X is Y's child, and Z is X's sibling → Z is also Y's child
     for (const r of rels) {
       if (!isChild(r.relationship_type)) continue;
-      // r says: from_node is to_node's child (e.g., from=A, to=B, type=son → A is B's son)
-      const child = r.from_node_id;     // A
-      const parent = r.to_node_id;      // B
+      // Convention: from=A, to=B, type=son → "B is A's son" → A is parent, B is child
+      const parent = r.from_node_id;    // A (the parent)
+      const child = r.to_node_id;       // B (the child)
 
       // Find child's siblings
       const childRels = getRelationsFrom(child);
       for (const cr of childRels) {
         if (!isSibling(cr.type)) continue;
-        const sibling = cr.toId;        // C (A's sibling)
+        const sibling = cr.toId;        // C (child's sibling)
         const siblingGender = genderMap.get(sibling) || "unknown";
         const parentGender = genderMap.get(parent) || "unknown";
 
-        // C is also B's child
-        addIfNew(sibling, parent, childTypeForGender(siblingGender));
-        // B is also C's parent
-        addIfNew(parent, sibling, parentTypeForGender(parentGender));
+        // Sibling is also parent's child: from=parent, to=sibling, type=son/daughter
+        addIfNew(parent, sibling, childTypeForGender(siblingGender));
+        // Parent is also sibling's parent: from=sibling, to=parent, type=father/mother
+        addIfNew(sibling, parent, parentTypeForGender(parentGender));
       }
     }
 
@@ -137,22 +137,22 @@ export async function inferRelationships(celebrationId: string): Promise<void> {
     // If X is Y's parent, and Z is X's sibling → Z is Y's uncle/aunt
     for (const r of rels) {
       if (!isParent(r.relationship_type)) continue;
-      // r says: from_node is to_node's parent (e.g., from=B, to=A, type=father → B is A's father)
-      const parent = r.from_node_id;    // B
-      const child = r.to_node_id;       // A
+      // Convention: from=B, to=A, type=father → "A is B's father" → A is parent, B is child
+      const child = r.from_node_id;     // B (the child — they're saying "A is my father")
+      const parent = r.to_node_id;      // A (the parent)
 
       // Find parent's siblings
       const parentRels = getRelationsFrom(parent);
       for (const pr of parentRels) {
         if (!isSibling(pr.type)) continue;
-        const parentSibling = pr.toId;  // D (B's sibling)
+        const parentSibling = pr.toId;  // D (parent's sibling)
         const psGender = genderMap.get(parentSibling) || "unknown";
         const childGender = genderMap.get(child) || "unknown";
 
-        // D is A's uncle/aunt
-        addIfNew(parentSibling, child, uncleAuntTypeForGender(psGender));
-        // A is D's nephew/niece
-        addIfNew(child, parentSibling, nephewNieceTypeForGender(childGender));
+        // parentSibling is child's uncle/aunt: from=child, to=parentSibling, type=uncle/aunt
+        addIfNew(child, parentSibling, uncleAuntTypeForGender(psGender));
+        // child is parentSibling's nephew/niece: from=parentSibling, to=child, type=nephew/niece
+        addIfNew(parentSibling, child, nephewNieceTypeForGender(childGender));
       }
     }
 
@@ -219,7 +219,7 @@ export async function inferRelationships(celebrationId: string): Promise<void> {
       const personA = r.from_node_id;
       const personB = r.to_node_id;     // personA's sibling
 
-      // Find personB's children
+      // Find personB's children (from=personB, to=child, type=son/daughter)
       const bRels = getRelationsFrom(personB);
       for (const br of bRels) {
         if (br.type !== "son" && br.type !== "daughter") continue;
@@ -227,10 +227,10 @@ export async function inferRelationships(celebrationId: string): Promise<void> {
         const childGender = genderMap.get(childOfB) || "unknown";
         const personAGender = genderMap.get(personA) || "unknown";
 
-        // childOfB is personA's nephew/niece
-        addIfNew(childOfB, personA, nephewNieceTypeForGender(childGender));
-        // personA is childOfB's uncle/aunt
-        addIfNew(personA, childOfB, uncleAuntTypeForGender(personAGender));
+        // personA is childOfB's uncle/aunt: from=childOfB, to=personA, type=uncle/aunt
+        addIfNew(childOfB, personA, uncleAuntTypeForGender(personAGender));
+        // childOfB is personA's nephew/niece: from=personA, to=childOfB, type=nephew/niece
+        addIfNew(personA, childOfB, nephewNieceTypeForGender(childGender));
       }
     }
 
@@ -238,18 +238,29 @@ export async function inferRelationships(celebrationId: string): Promise<void> {
     // If A is X's child and B is X's child, and A ≠ B → A and B are siblings
     // (This catches cases where two children are added to the same parent
     //  but never explicitly marked as siblings of each other)
-    const parentToChildren = new Map<string, string[]>();
+    // Build parent→children map from BOTH directions
+    const parentToChildren = new Map<string, Set<string>>();
     for (const r of rels) {
-      if (!isParent(r.relationship_type)) continue;
-      // from=parent, to=child
-      const parent = r.from_node_id;
-      const child = r.to_node_id;
-      const existing = parentToChildren.get(parent) || [];
-      if (!existing.includes(child)) existing.push(child);
-      parentToChildren.set(parent, existing);
+      // Direction 1: from=child, to=parent, type=father/mother
+      if (r.relationship_type === "father" || r.relationship_type === "mother") {
+        const child = r.from_node_id;
+        const parent = r.to_node_id;
+        const set = parentToChildren.get(parent) || new Set();
+        set.add(child);
+        parentToChildren.set(parent, set);
+      }
+      // Direction 2: from=parent, to=child, type=son/daughter
+      if (r.relationship_type === "son" || r.relationship_type === "daughter") {
+        const parent = r.from_node_id;
+        const child = r.to_node_id;
+        const set = parentToChildren.get(parent) || new Set();
+        set.add(child);
+        parentToChildren.set(parent, set);
+      }
     }
 
-    for (const [, children] of parentToChildren) {
+    for (const [, childrenSet] of parentToChildren) {
+      const children = Array.from(childrenSet);
       for (let i = 0; i < children.length; i++) {
         for (let j = i + 1; j < children.length; j++) {
           const a = children[i];
